@@ -28,6 +28,7 @@ add_library(smart_terminal_core STATIC
     src/logger.c
     src/explain.c
     src/history.c
+    src/aliases.c
 )
 target_include_directories(smart_terminal_core PUBLIC src)
 
@@ -45,3 +46,8 @@ add_test(NAME parser_tests COMMAND test_parser)
 add_executable(test_safety tests/test_safety.c)
 target_link_libraries(test_safety smart_terminal_core)
 add_test(NAME safety_tests COMMAND test_safety)
+
+# Installation support
+install(TARGETS smart_terminal DESTINATION bin)
+install(DIRECTORY config DESTINATION bin)
+install(DIRECTORY data DESTINATION bin)
