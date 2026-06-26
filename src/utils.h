@@ -11,4 +11,9 @@ void trim_whitespace(char *str);
  */
 void to_lowercase(char *str);
 
+/**
+ * Copies text to the system clipboard securely using a temporary file.
+ */
+void copy_to_clipboard(const char *text);
+
 #endif // UTILS_H
