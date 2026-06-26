@@ -1,3 +1,0 @@
-C:/Users/Joseph/Desktop/projects/smart_terminal/build/CMakeFiles/smart_terminal.dir
-C:/Users/Joseph/Desktop/projects/smart_terminal/build/CMakeFiles/edit_cache.dir
-C:/Users/Joseph/Desktop/projects/smart_terminal/build/CMakeFiles/rebuild_cache.dir
