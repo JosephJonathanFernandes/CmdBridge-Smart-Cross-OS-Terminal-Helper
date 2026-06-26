@@ -17,7 +17,7 @@ void test_parse_create() {
     parse_input("create folder projects", &intent);
     
     assert(strcmp(intent.action, "create") == 0);
-    assert(strcmp(intent.object, "folder") == 0);
+    assert(strcmp(intent.object, "folders") == 0);
     assert(strcmp(intent.target, "projects") == 0);
 }
 
