@@ -13,6 +13,7 @@
 #include "safety.h"
 #include "utils.h"
 #include "logger.h"
+#include "explain.h"
 
 int main() {
     logger_init(LOG_INFO);
@@ -27,6 +28,9 @@ int main() {
         log_msg(LOG_ERROR, "No templates loaded. Exiting.");
         return 1;
     }
+    
+    ExplainEntry explanations[MAX_EXPLANATIONS];
+    int num_explanations = load_explanations(explanations);
 
     char input[1024];
 
@@ -51,8 +55,13 @@ int main() {
         // Uncomment to debug parsing:
         // print_intent(&intent);
 
-        if (intent.action[0] == '\0' || intent.object[0] == '\0') {
+        if (intent.action[0] == '\0' || (intent.object[0] == '\0' && strcmp(intent.action, "explain") != 0)) {
             printf("Could not understand command. Please try phrasing differently (e.g. 'find pdf files').\n");
+            continue;
+        }
+        
+        if (strcmp(intent.action, "explain") == 0) {
+            explain_command(intent.target, explanations, num_explanations);
             continue;
         }
 

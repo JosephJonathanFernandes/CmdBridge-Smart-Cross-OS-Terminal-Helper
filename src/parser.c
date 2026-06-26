@@ -6,7 +6,7 @@
 #include <ctype.h>
 
 const char *ACTIONS[] = {
-    "find", "show", "create", "delete", "move", "copy", "compress", "search", "list", NULL
+    "find", "show", "create", "delete", "move", "copy", "compress", "search", "list", "explain", NULL
 };
 
 const char *OBJECTS[] = {
@@ -31,6 +31,9 @@ void parse_input(const char *input, Intent *intent) {
     buffer[sizeof(buffer) - 1] = '\0';
     to_lowercase(buffer);
 
+    char input_copy[1024];
+    strncpy(input_copy, buffer, sizeof(input_copy) - 1);
+
     char target_buffer[MAX_STR_LEN] = "";
 
     // Tokenize by space
@@ -48,6 +51,18 @@ void parse_input(const char *input, Intent *intent) {
             strncat(target_buffer, token, MAX_STR_LEN - strlen(target_buffer) - 1);
         }
         token = strtok(NULL, " ");
+    }
+
+    // Check if the action is "explain"
+    if (strcmp(intent->action, "explain") == 0) {
+        // For explain, the rest of the string is the target command
+        char *target_start = strstr(input_copy, "explain");
+        if (target_start) {
+            target_start += strlen("explain");
+            while (*target_start == ' ') target_start++; // skip spaces
+            strncpy(intent->target, target_start, sizeof(intent->target) - 1);
+        }
+        return; // Skip object matching for 'explain'
     }
 
     trim_whitespace(target_buffer);
