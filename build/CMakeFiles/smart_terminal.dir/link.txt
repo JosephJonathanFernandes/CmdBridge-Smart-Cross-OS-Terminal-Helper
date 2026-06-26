@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\smart_terminal.dir/objects.a
+C:\MinGW\bin\ar.exe qc CMakeFiles\smart_terminal.dir/objects.a @CMakeFiles\smart_terminal.dir\objects1.rsp
+C:\MinGW\bin\gcc.exe -g -Wl,--whole-archive CMakeFiles\smart_terminal.dir/objects.a -Wl,--no-whole-archive -o smart_terminal.exe -Wl,--out-implib,libsmart_terminal.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\smart_terminal.dir\linkLibs.rsp

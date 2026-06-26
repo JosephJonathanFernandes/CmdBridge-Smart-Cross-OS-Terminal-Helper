@@ -1,0 +1,44 @@
+[
+{
+  "directory": "C:/Users/Joseph/Desktop/projects/smart_terminal/build",
+  "command": "C:\\MinGW\\bin\\gcc.exe   -g -std=gnu99 -o CMakeFiles\\smart_terminal.dir\\main.c.obj -c C:\\Users\\Joseph\\Desktop\\projects\\smart_terminal\\main.c",
+  "file": "C:/Users/Joseph/Desktop/projects/smart_terminal/main.c",
+  "output": "CMakeFiles/smart_terminal.dir/main.c.obj"
+},
+{
+  "directory": "C:/Users/Joseph/Desktop/projects/smart_terminal/build",
+  "command": "C:\\MinGW\\bin\\gcc.exe   -g -std=gnu99 -o CMakeFiles\\smart_terminal.dir\\parser.c.obj -c C:\\Users\\Joseph\\Desktop\\projects\\smart_terminal\\parser.c",
+  "file": "C:/Users/Joseph/Desktop/projects/smart_terminal/parser.c",
+  "output": "CMakeFiles/smart_terminal.dir/parser.c.obj"
+},
+{
+  "directory": "C:/Users/Joseph/Desktop/projects/smart_terminal/build",
+  "command": "C:\\MinGW\\bin\\gcc.exe   -g -std=gnu99 -o CMakeFiles\\smart_terminal.dir\\intent.c.obj -c C:\\Users\\Joseph\\Desktop\\projects\\smart_terminal\\intent.c",
+  "file": "C:/Users/Joseph/Desktop/projects/smart_terminal/intent.c",
+  "output": "CMakeFiles/smart_terminal.dir/intent.c.obj"
+},
+{
+  "directory": "C:/Users/Joseph/Desktop/projects/smart_terminal/build",
+  "command": "C:\\MinGW\\bin\\gcc.exe   -g -std=gnu99 -o CMakeFiles\\smart_terminal.dir\\os_mapper.c.obj -c C:\\Users\\Joseph\\Desktop\\projects\\smart_terminal\\os_mapper.c",
+  "file": "C:/Users/Joseph/Desktop/projects/smart_terminal/os_mapper.c",
+  "output": "CMakeFiles/smart_terminal.dir/os_mapper.c.obj"
+},
+{
+  "directory": "C:/Users/Joseph/Desktop/projects/smart_terminal/build",
+  "command": "C:\\MinGW\\bin\\gcc.exe   -g -std=gnu99 -o CMakeFiles\\smart_terminal.dir\\safety.c.obj -c C:\\Users\\Joseph\\Desktop\\projects\\smart_terminal\\safety.c",
+  "file": "C:/Users/Joseph/Desktop/projects/smart_terminal/safety.c",
+  "output": "CMakeFiles/smart_terminal.dir/safety.c.obj"
+},
+{
+  "directory": "C:/Users/Joseph/Desktop/projects/smart_terminal/build",
+  "command": "C:\\MinGW\\bin\\gcc.exe   -g -std=gnu99 -o CMakeFiles\\smart_terminal.dir\\commands.c.obj -c C:\\Users\\Joseph\\Desktop\\projects\\smart_terminal\\commands.c",
+  "file": "C:/Users/Joseph/Desktop/projects/smart_terminal/commands.c",
+  "output": "CMakeFiles/smart_terminal.dir/commands.c.obj"
+},
+{
+  "directory": "C:/Users/Joseph/Desktop/projects/smart_terminal/build",
+  "command": "C:\\MinGW\\bin\\gcc.exe   -g -std=gnu99 -o CMakeFiles\\smart_terminal.dir\\utils.c.obj -c C:\\Users\\Joseph\\Desktop\\projects\\smart_terminal\\utils.c",
+  "file": "C:/Users/Joseph/Desktop/projects/smart_terminal/utils.c",
+  "output": "CMakeFiles/smart_terminal.dir/utils.c.obj"
+}
+]
