@@ -1,12 +1,39 @@
-# Smart Terminal Assistant
+# CmdBridge
+
+Cross-platform terminal assistant written in C
 
 ![CI](https://github.com/JosephJonathanFernandes/CmdBridge-Smart-Cross-OS-Terminal-Helper/actions/workflows/ci.yml/badge.svg)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black)
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat&logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-000000?style=flat&logo=apple&logoColor=white)
+![C](https://img.shields.io/badge/C-00599C?style=flat&logo=c&logoColor=white)
+
+## Features
+- ✅ Natural language parsing
+- ✅ Linux support
+- ✅ Windows support
+- ✅ macOS support
+- ✅ Safety checks
+- ✅ Command explanations
+- ✅ Aliases
+
+## Example Usage
+
+```text
+cmdbridge> show running processes
+
+Detected:
+ACTION: show_processes
+
+Suggested:
+ps aux
+```
 
 ## The Problem
 Navigating the terminal across Windows (PowerShell), macOS, and Linux requires memorizing different command syntaxes for the exact same actions (e.g., `ls -la` vs. `dir`, or `find` vs. `Get-ChildItem`). This causes friction and errors for cross-platform developers.
 
 ## The Solution
-**Smart Terminal Assistant** is an enterprise-grade CLI tool written in pure C that translates simple natural-language intents into safe, OS-specific terminal commands.
+**CmdBridge** is an enterprise-grade CLI tool written in pure C that translates simple natural-language intents into safe, OS-specific terminal commands.
 
 - 🌍 **Cross-Platform**: Dynamically resolves commands using C preprocessor macros (`_WIN32`, `__APPLE__`, `__linux__`).
 - 🛡️ **Secure by Default**: Built-in safety module blocks destructive commands (`rm -rf`, `format`, `kill`) before they can harm your system.
