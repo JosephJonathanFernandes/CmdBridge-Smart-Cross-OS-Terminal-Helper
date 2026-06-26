@@ -7,12 +7,16 @@
 int load_command_templates(CommandTemplate *templates) {
     int count = 0;
     
-    // In a real application, the path should be read from .env
-    // We hardcode the path relative to CWD for the MVP
+    // Try to open relative to project root first, then fallback to relative from build directory
     const char *config_path = "config/commands.conf";
     FILE *file = fopen(config_path, "r");
     if (!file) {
-        log_msg(LOG_ERROR, "Failed to open command configuration file: %s", config_path);
+        config_path = "../config/commands.conf";
+        file = fopen(config_path, "r");
+    }
+
+    if (!file) {
+        log_msg(LOG_ERROR, "Failed to open command configuration file in config/ or ../config/");
         return 0;
     }
 
