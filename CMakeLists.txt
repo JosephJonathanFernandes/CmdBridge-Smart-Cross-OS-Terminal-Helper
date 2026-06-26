@@ -27,6 +27,7 @@ add_library(smart_terminal_core STATIC
     src/utils.c
     src/logger.c
     src/explain.c
+    src/history.c
 )
 target_include_directories(smart_terminal_core PUBLIC src)
 

@@ -9,8 +9,11 @@ out/
 *.a
 *.lib
 
-# Environment variables
+# Secrets and configurations
 .env
+
+# Data
+data/
 .env.local
 
 # IDE and OS

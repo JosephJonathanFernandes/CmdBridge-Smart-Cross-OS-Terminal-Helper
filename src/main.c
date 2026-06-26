@@ -14,6 +14,7 @@
 #include "utils.h"
 #include "logger.h"
 #include "explain.h"
+#include "history.h"
 
 int main() {
     logger_init(LOG_INFO);
@@ -48,6 +49,14 @@ int main() {
         if (strcmp(input, "exit") == 0 || strcmp(input, "quit") == 0) {
             break;
         }
+
+        if (strcmp(input, "history") == 0) {
+            show_history();
+            continue;
+        }
+
+        // Log to history file
+        log_history(input);
 
         Intent intent;
         parse_input(input, &intent);
