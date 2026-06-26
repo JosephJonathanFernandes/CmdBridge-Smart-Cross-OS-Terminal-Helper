@@ -5,19 +5,42 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-const char *ACTIONS[] = {
-    "find", "show", "create", "delete", "move", "copy", "compress", "search", "list", "explain", NULL
+typedef struct {
+    const char *primary;
+    const char *synonyms[10];
+} SynonymGroup;
+
+SynonymGroup action_synonyms[] = {
+    {"find", {"search", "locate", NULL}},
+    {"delete", {"remove", "del", "rm", "erase", NULL}},
+    {"list", {"show", "display", "ls", "dir", NULL}},
+    {"create", {"make", "new", "mkdir", NULL}},
+    {"explain", {NULL}},
+    {NULL, {NULL}}
 };
 
-const char *OBJECTS[] = {
-    "files", "file", "folder", "processes", "text", "disk", NULL
+SynonymGroup object_synonyms[] = {
+    {"files", {"file", "documents", "docs", NULL}},
+    {"folders", {"folder", "directory", "directories", "dir", "dirs", NULL}},
+    {"processes", {"process", "tasks", "apps", NULL}},
+    {NULL, {NULL}}
 };
 
-int is_in_list(const char *word, const char **list) {
-    for (int i = 0; list[i] != NULL; i++) {
-        if (strcmp(word, list[i]) == 0) {
-            return 1;
+const char *noise_words[] = {"my", "the", "a", "an", "all", "some", NULL};
+
+const char* resolve_synonym(const char* word, SynonymGroup* groups) {
+    for (int i = 0; groups[i].primary != NULL; i++) {
+        if (strcmp(word, groups[i].primary) == 0) return groups[i].primary;
+        for (int j = 0; groups[i].synonyms[j] != NULL; j++) {
+            if (strcmp(word, groups[i].synonyms[j]) == 0) return groups[i].primary;
         }
+    }
+    return NULL;
+}
+
+int is_noise_word(const char *word) {
+    for (int i = 0; noise_words[i] != NULL; i++) {
+        if (strcmp(word, noise_words[i]) == 0) return 1;
     }
     return 0;
 }
@@ -39,10 +62,18 @@ void parse_input(const char *input, Intent *intent) {
     // Tokenize by space
     char *token = strtok(buffer, " ");
     while (token != NULL) {
-        if (is_in_list(token, ACTIONS) && intent->action[0] == '\0') {
-            strncpy(intent->action, token, MAX_STR_LEN - 1);
-        } else if (is_in_list(token, OBJECTS) && intent->object[0] == '\0') {
-            strncpy(intent->object, token, MAX_STR_LEN - 1);
+        if (is_noise_word(token)) {
+            token = strtok(NULL, " ");
+            continue;
+        }
+
+        const char *primary_action = resolve_synonym(token, action_synonyms);
+        const char *primary_object = resolve_synonym(token, object_synonyms);
+
+        if (primary_action && intent->action[0] == '\0') {
+            strncpy(intent->action, primary_action, MAX_STR_LEN - 1);
+        } else if (primary_object && intent->object[0] == '\0') {
+            strncpy(intent->object, primary_object, MAX_STR_LEN - 1);
         } else {
             // Append to target
             if (strlen(target_buffer) > 0) {
@@ -63,6 +94,15 @@ void parse_input(const char *input, Intent *intent) {
             strncpy(intent->target, target_start, sizeof(intent->target) - 1);
         }
         return; // Skip object matching for 'explain'
+    }
+
+    // Intelligent Object Defaults
+    if (intent->object[0] == '\0' && intent->action[0] != '\0' && strcmp(intent->action, "explain") != 0) {
+        if (strcmp(intent->action, "find") == 0 || strcmp(intent->action, "list") == 0 || strcmp(intent->action, "delete") == 0) {
+            strcpy(intent->object, "files");
+        } else if (strcmp(intent->action, "create") == 0) {
+            strcpy(intent->object, "folders");
+        }
     }
 
     trim_whitespace(target_buffer);
