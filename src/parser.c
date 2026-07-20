@@ -15,6 +15,8 @@ SynonymGroup action_synonyms[] = {
     {"delete", {"remove", "del", "rm", "erase", NULL}},
     {"list", {"show", "display", "ls", "dir", NULL}},
     {"create", {"make", "new", "mkdir", NULL}},
+    {"copy", {"cp", "duplicate", NULL}},
+    {"move", {"mv", "rename", NULL}},
     {"explain", {NULL}},
     {NULL, {NULL}}
 };

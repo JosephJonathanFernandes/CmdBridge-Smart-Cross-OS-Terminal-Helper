@@ -19,6 +19,7 @@
 #include "explain.h"
 #include "history.h"
 #include "aliases.h"
+#include "native_api/file_ops.h"
 
 int main() {
     logger_init(LOG_INFO);
@@ -130,48 +131,101 @@ int main() {
                 continue;
             }
 
-            if (!is_intent_safe(&intent) || !is_command_safe(mapped_cmd)) {
-                printf("\nWarning: Potentially destructive operation detected\n");
-                printf("Suggested command: %s\n", mapped_cmd);
-                printf("Proceed? [y/n]: ");
-                
-                char choice[10];
-                if (fgets(choice, sizeof(choice), stdin) != NULL) {
-                    choice[strcspn(choice, "\r\n")] = '\0';
-                    to_lowercase(choice);
-                    if (strcmp(choice, "y") != 0 && strcmp(choice, "yes") != 0) {
-                        printf("Operation cancelled.\n");
-                        segment = next_segment;
-                        continue;
-                    }
+            char error_msg[512] = {0};
+            if (strcmp(intent.action, "raw") != 0 && !validate_intent(&intent, error_msg, sizeof(error_msg))) {
+                printf("\nValidation Failed:\n%s\n", error_msg);
+                segment = next_segment;
+                continue;
+            }
+
+            RiskLevel risk = RISK_SAFE;
+            if (strcmp(intent.action, "raw") != 0) {
+                risk = get_intent_risk(&intent);
+                if (!is_command_safe(mapped_cmd) && risk < RISK_HIGH) {
+                    risk = RISK_HIGH;
+                }
+            } else if (!is_command_safe(mapped_cmd)) {
+                risk = RISK_HIGH;
+            }
+
+            char consequence[512] = {0};
+            get_intent_consequence(&intent, consequence, sizeof(consequence));
+
+            printf("\n──────────────────────────────\n");
+            printf("✓ I understood\n\n");
+            
+            if (strcmp(intent.action, "raw") == 0) {
+                printf("Action:\nRaw OS Command\n\n");
+                printf("Target:\n%s\n\n", intent.args[0]);
+            } else {
+                printf("Action:\n%s %s\n\n", intent.action, intent.object);
+                if (intent.argc > 0) {
+                    printf("Source:\n%s\n\n", intent.args[0]);
+                }
+                if (intent.argc > 1) {
+                    printf("Destination:\n%s\n\n", intent.args[1]);
                 }
             }
             
-            printf("\nSuggested:\n%s\n\n", mapped_cmd);
-            printf("[1] Execute\n");
-            printf("[2] Copy command\n");
-            printf("[3] Cancel\n");
+            printf("Platform:\n");
+#ifdef _WIN32
+            printf("Windows\n\n");
+#elif __APPLE__
+            printf("macOS\n\n");
+#else
+            printf("Linux/POSIX\n\n");
+#endif
+
+            printf("Method:\n");
+            if (mode == EXEC_API) {
+                printf("Native API (No shell used)\n\n");
+            } else if (mode == EXEC_NATIVE) {
+                printf("POSIX API (execvp)\n\n");
+            } else {
+                printf("System Shell\n\n");
+            }
+
+            printf("Risk:\n%s\n\n", get_risk_string(risk));
+
+            printf("Will do:\n%s\n", consequence);
+            printf("──────────────────────────────\n\n");
+
+            printf("Proceed? [y/n/d]: ");
             
-            printf("Choice: ");
-            char option[10];
-            if (fgets(option, sizeof(option), stdin) != NULL) {
-                option[strcspn(option, "\r\n")] = '\0';
+            char choice[10];
+            if (fgets(choice, sizeof(choice), stdin) != NULL) {
+                choice[strcspn(choice, "\r\n")] = '\0';
+                to_lowercase(choice);
                 
-                if (strcmp(option, "1") == 0) {
-                    log_msg(LOG_INFO, "Executing: %s", mapped_cmd);
+                if (strcmp(choice, "d") == 0 || strcmp(choice, "dry run") == 0 || strcmp(choice, "dryrun") == 0) {
+                    printf("\n--- DRY RUN MODE ---\n");
+                    printf("Would execute:\n");
+                    if (mode == EXEC_API) {
+                        printf("C API Native Function Call\n");
+                    } else {
+                        printf("%s\n", mapped_cmd);
+                    }
+                    printf("Nothing executed.\n");
+                } else if (strcmp(choice, "y") == 0 || strcmp(choice, "yes") == 0) {
+                    log_msg(LOG_INFO, "Executing command with mode %d", mode);
                     printf("\n");
                     
+                    int result = -1;
+                    if (mode == EXEC_API) {
+                        result = execute_native_api(&intent) ? 0 : 1;
+                    } 
 #ifdef _WIN32
-                    const char *ps_path = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
-                    int result = (int)_spawnl(_P_WAIT, ps_path, "powershell.exe", "-NoProfile", "-Command", mapped_cmd, NULL);
-                    
-                    if (result == -1) {
-                        log_msg(LOG_WARN, "Failed to find PowerShell. Attempting fallback to cmd.exe");
-                        result = (int)_spawnl(_P_WAIT, "C:\\Windows\\System32\\cmd.exe", "cmd.exe", "/c", mapped_cmd, NULL);
+                    else {
+                        const char *ps_path = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
+                        result = (int)_spawnl(_P_WAIT, ps_path, "powershell.exe", "-NoProfile", "-Command", mapped_cmd, NULL);
+                        
+                        if (result == -1) {
+                            log_msg(LOG_WARN, "Failed to find PowerShell. Attempting fallback to cmd.exe");
+                            result = (int)_spawnl(_P_WAIT, "C:\\Windows\\System32\\cmd.exe", "cmd.exe", "/c", mapped_cmd, NULL);
+                        }
                     }
 #else
-                    int result = -1;
-                    if (mode == EXEC_NATIVE) {
+                    else if (mode == EXEC_NATIVE) {
                         char *argv[100];
                         int exec_argc = 0;
                         tokenize_command(mapped_cmd, argv, &exec_argc);
@@ -197,11 +251,8 @@ int main() {
                     if (result != 0) {
                         log_msg(LOG_WARN, "Command exited with code %d", result);
                     }
-                } else if (strcmp(option, "2") == 0) {
-                    copy_to_clipboard(mapped_cmd);
-                    printf("Copied to clipboard!\n");
                 } else {
-                    printf("Cancelled.\n");
+                    printf("Operation cancelled.\n");
                 }
             }
             

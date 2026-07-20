@@ -1,14 +1,17 @@
-name: C/C++ CI
+name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+  build_and_test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -19,6 +22,43 @@ jobs:
     - name: Build
       run: cmake --build build
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
+    - name: Run Tests
+      working-directory: build
       run: ctest --output-on-failure
+      
+    - name: Configure CMake (Sanitizers)
+      if: matrix.os == 'ubuntu-latest'
+      run: cmake -B build_sanitizers -DENABLE_SANITIZERS=ON
+
+    - name: Build (Sanitizers)
+      if: matrix.os == 'ubuntu-latest'
+      run: cmake --build build_sanitizers
+      
+    - name: Run Tests (Sanitizers)
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: build_sanitizers
+      run: ctest --output-on-failure
+      
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install lcov
+      run: sudo apt-get install -y lcov
+
+    - name: Configure CMake (Coverage)
+      run: cmake -B build_coverage -DENABLE_COVERAGE=ON
+
+    - name: Build
+      run: cmake --build build_coverage
+
+    - name: Run Tests
+      working-directory: build_coverage
+      run: ctest --output-on-failure
+
+    - name: Generate Coverage Report
+      run: |
+        lcov --capture --directory build_coverage --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' '*/tests/*' --output-file coverage.info
+        lcov --list coverage.info

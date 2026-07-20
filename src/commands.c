@@ -5,8 +5,12 @@
 #include <stdlib.h>
 
 static ExecutionMode parse_mode(const char *mode_str) {
-    if (mode_str && strcmp(mode_str, "NATIVE") == 0) {
-        return EXEC_NATIVE;
+    if (mode_str) {
+        if (strcmp(mode_str, "NATIVE") == 0) {
+            return EXEC_NATIVE;
+        } else if (strcmp(mode_str, "API") == 0) {
+            return EXEC_API;
+        }
     }
     return EXEC_SHELL;
 }

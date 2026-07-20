@@ -1,0 +1,11 @@
+create folder test_output
+y
+copy file "config/commands.conf" "test_output/commands_copy.conf"
+y
+move file "test_output/commands_copy.conf" "test_output/commands_moved.conf"
+y
+delete folder test_output
+d
+delete folder test_output
+y
+exit

@@ -5,8 +5,9 @@
 #define MAX_TEMPLATES 50
 
 typedef enum {
+    EXEC_SHELL,
     EXEC_NATIVE,
-    EXEC_SHELL
+    EXEC_API
 } ExecutionMode;
 
 typedef struct {
