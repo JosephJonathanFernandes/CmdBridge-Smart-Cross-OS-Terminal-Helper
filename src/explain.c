@@ -40,17 +40,13 @@ int load_explanations(ExplainEntry *entries) {
     return count;
 }
 
-void explain_command(const char *cmd, ExplainEntry *entries, int num_entries) {
-    if (!cmd || strlen(cmd) == 0) return;
+void explain_command(int argc, char args[][256], ExplainEntry *entries, int num_entries) {
+    if (argc == 0) return;
     
     printf("\nExplanation:\n");
 
-    // Copy command for tokenization
-    char cmd_copy[1024];
-    strncpy(cmd_copy, cmd, sizeof(cmd_copy) - 1);
-    
-    char *token = strtok(cmd_copy, " ");
-    while (token != NULL) {
+    for (int arg_idx = 0; arg_idx < argc; arg_idx++) {
+        char *token = args[arg_idx];
         int found = 0;
         
         // Search dictionary
@@ -72,7 +68,5 @@ void explain_command(const char *cmd, ExplainEntry *entries, int num_entries) {
                 printf("%-10s -> target path or argument\n", token);
             }
         }
-        
-        token = strtok(NULL, " ");
     }
 }

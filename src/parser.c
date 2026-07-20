@@ -49,52 +49,38 @@ void parse_input(const char *input, Intent *intent) {
     init_intent(intent);
     if (!input || strlen(input) == 0) return;
 
-    char buffer[1024];
-    strncpy(buffer, input, sizeof(buffer) - 1);
-    buffer[sizeof(buffer) - 1] = '\0';
-    to_lowercase(buffer);
+    char *argv[100];
+    int argc = 0;
+    tokenize_command(input, argv, &argc);
 
-    char input_copy[1024];
-    strncpy(input_copy, buffer, sizeof(input_copy) - 1);
+    for (int i = 0; i < argc; i++) {
+        char *token = argv[i];
+        
+        char token_lower[1024];
+        strncpy(token_lower, token, sizeof(token_lower) - 1);
+        token_lower[sizeof(token_lower) - 1] = '\0';
+        to_lowercase(token_lower);
 
-    char target_buffer[MAX_STR_LEN] = "";
-
-    // Tokenize by space
-    char *token = strtok(buffer, " ");
-    while (token != NULL) {
-        if (is_noise_word(token)) {
-            token = strtok(NULL, " ");
+        if (is_noise_word(token_lower)) {
             continue;
         }
 
-        const char *primary_action = resolve_synonym(token, action_synonyms);
-        const char *primary_object = resolve_synonym(token, object_synonyms);
+        const char *primary_action = resolve_synonym(token_lower, action_synonyms);
+        const char *primary_object = resolve_synonym(token_lower, object_synonyms);
 
         if (primary_action && intent->action[0] == '\0') {
             strncpy(intent->action, primary_action, MAX_STR_LEN - 1);
-        } else if (primary_object && intent->object[0] == '\0') {
+        } else if (primary_object && intent->object[0] == '\0' && strcmp(intent->action, "explain") != 0) {
             strncpy(intent->object, primary_object, MAX_STR_LEN - 1);
         } else {
-            // Append to target
-            if (strlen(target_buffer) > 0) {
-                strcat(target_buffer, " ");
+            if (intent->argc < MAX_ARGS) {
+                strncpy(intent->args[intent->argc], token, MAX_STR_LEN - 1);
+                intent->argc++;
             }
-            strncat(target_buffer, token, MAX_STR_LEN - strlen(target_buffer) - 1);
         }
-        token = strtok(NULL, " ");
     }
 
-    // Check if the action is "explain"
-    if (strcmp(intent->action, "explain") == 0) {
-        // For explain, the rest of the string is the target command
-        char *target_start = strstr(input_copy, "explain");
-        if (target_start) {
-            target_start += strlen("explain");
-            while (*target_start == ' ') target_start++; // skip spaces
-            strncpy(intent->target, target_start, sizeof(intent->target) - 1);
-        }
-        return; // Skip object matching for 'explain'
-    }
+    free_tokens(argv, argc);
 
     // Intelligent Object Defaults
     if (intent->object[0] == '\0' && intent->action[0] != '\0' && strcmp(intent->action, "explain") != 0) {
@@ -104,7 +90,4 @@ void parse_input(const char *input, Intent *intent) {
             strcpy(intent->object, "folders");
         }
     }
-
-    trim_whitespace(target_buffer);
-    strncpy(intent->target, target_buffer, MAX_STR_LEN - 1);
 }

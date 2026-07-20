@@ -4,11 +4,19 @@
 #define MAX_CMD_LEN 256
 #define MAX_TEMPLATES 50
 
+typedef enum {
+    EXEC_NATIVE,
+    EXEC_SHELL
+} ExecutionMode;
+
 typedef struct {
     char action[50];
     char object[50];
+    ExecutionMode linux_mode;
     char linux_cmd[MAX_CMD_LEN];
+    ExecutionMode windows_mode;
     char windows_cmd[MAX_CMD_LEN];
+    ExecutionMode mac_mode;
     char mac_cmd[MAX_CMD_LEN];
 } CommandTemplate;
 

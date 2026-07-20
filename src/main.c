@@ -4,6 +4,9 @@
 
 #ifdef _WIN32
 #include <process.h>
+#else
+#include <unistd.h>
+#include <sys/wait.h>
 #endif
 
 #include "intent.h"
@@ -106,25 +109,28 @@ int main() {
             if (intent.action[0] == '\0' || (intent.object[0] == '\0' && strcmp(intent.action, "explain") != 0)) {
                 // If it fails to parse as natural language, just treat it as a raw OS command to support things like `cd` in aliases
                 strcpy(intent.action, "raw");
-                strcpy(intent.target, current_cmd);
+                strncpy(intent.args[0], current_cmd, MAX_STR_LEN - 1);
+                intent.argc = 1;
             }
 
             if (strcmp(intent.action, "explain") == 0) {
-                explain_command(intent.target, explanations, num_explanations);
+                explain_command(intent.argc, intent.args, explanations, num_explanations);
                 segment = next_segment;
                 continue;
             }
 
             char mapped_cmd[MAX_CMD_LEN];
+            ExecutionMode mode = EXEC_SHELL;
+            
             if (strcmp(intent.action, "raw") == 0) {
-                strncpy(mapped_cmd, intent.target, MAX_CMD_LEN - 1);
-            } else if (!map_to_os_command(&intent, templates, num_templates, mapped_cmd)) {
+                strncpy(mapped_cmd, intent.args[0], MAX_CMD_LEN - 1);
+            } else if (!map_to_os_command(&intent, templates, num_templates, mapped_cmd, &mode)) {
                 printf("No matching command template found for action '%s' and object '%s'.\n", intent.action, intent.object);
                 segment = next_segment;
                 continue;
             }
 
-            if (!is_command_safe(mapped_cmd)) {
+            if (!is_intent_safe(&intent) || !is_command_safe(mapped_cmd)) {
                 printf("\nWarning: Potentially destructive operation detected\n");
                 printf("Suggested command: %s\n", mapped_cmd);
                 printf("Proceed? [y/n]: ");
@@ -164,7 +170,28 @@ int main() {
                         result = (int)_spawnl(_P_WAIT, "C:\\Windows\\System32\\cmd.exe", "cmd.exe", "/c", mapped_cmd, NULL);
                     }
 #else
-                    int result = system(mapped_cmd);
+                    int result = -1;
+                    if (mode == EXEC_NATIVE) {
+                        char *argv[100];
+                        int exec_argc = 0;
+                        tokenize_command(mapped_cmd, argv, &exec_argc);
+                        
+                        pid_t pid = fork();
+                        if (pid == 0) {
+                            execvp(argv[0], argv);
+                            perror("execvp failed");
+                            exit(1);
+                        } else if (pid > 0) {
+                            int status;
+                            waitpid(pid, &status, 0);
+                            if (WIFEXITED(status)) {
+                                result = WEXITSTATUS(status);
+                            }
+                        }
+                        free_tokens(argv, exec_argc);
+                    } else {
+                        result = system(mapped_cmd);
+                    }
 #endif
                     
                     if (result != 0) {

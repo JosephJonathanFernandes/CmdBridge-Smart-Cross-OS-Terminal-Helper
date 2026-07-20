@@ -1,4 +1,6 @@
 #include "os_mapper.h"
+#include "utils.h"
+#include "logger.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -24,7 +26,7 @@ void replace_placeholder(char *str, const char *placeholder, const char *replace
     strcpy(str, buffer);
 }
 
-int map_to_os_command(const Intent *intent, const CommandTemplate *templates, int num_templates, char *out_cmd) {
+int map_to_os_command(const Intent *intent, const CommandTemplate *templates, int num_templates, char *out_cmd, ExecutionMode *out_mode) {
     if (!intent || !templates || !out_cmd) return 0;
     out_cmd[0] = '\0';
 
@@ -46,42 +48,39 @@ int map_to_os_command(const Intent *intent, const CommandTemplate *templates, in
 
 #ifdef _WIN32
     raw_cmd = matched_template->windows_cmd;
+    if (out_mode) *out_mode = matched_template->windows_mode;
 #elif __APPLE__
     raw_cmd = matched_template->mac_cmd;
+    if (out_mode) *out_mode = matched_template->mac_mode;
 #elif __linux__
     raw_cmd = matched_template->linux_cmd;
+    if (out_mode) *out_mode = matched_template->linux_mode;
 #else
     // Fallback to linux
     raw_cmd = matched_template->linux_cmd;
+    if (out_mode) *out_mode = matched_template->linux_mode;
 #endif
 
     strcpy(out_cmd, raw_cmd);
-
-    if (intent->target[0] != '\0') {
-        replace_placeholder(out_cmd, "{TARGET}", intent->target);
-    }
     
-    // Simplification for MVP: If there's a {DEST} placeholder but we don't have it parsed in intent, 
-    // we'll just leave it or replace it with empty if not used. 
-    // In a real scenario we would parse DEST as well.
-    // For now we assume TARGET contains everything (e.g. "report.txt documents") for move/copy.
-    // Let's handle a naive split for TARGET if {DEST} is needed.
-    if (strstr(out_cmd, "{DEST}") != NULL) {
-        char temp_target[MAX_STR_LEN];
-        strcpy(temp_target, intent->target);
-        
-        char *space_pos = strchr(temp_target, ' ');
-        if (space_pos != NULL) {
-            *space_pos = '\0'; // Split
-            char *dest = space_pos + 1;
-            
-            // Re-replace {TARGET} with the first part
-            strcpy(out_cmd, raw_cmd);
-            replace_placeholder(out_cmd, "{TARGET}", temp_target);
-            replace_placeholder(out_cmd, "{DEST}", dest);
-        } else {
-            // Missing dest
-            replace_placeholder(out_cmd, "{DEST}", ".");
+    // Windows SHELL execution must strictly validate input to prevent injection
+#ifdef _WIN32
+    if (*out_mode == EXEC_SHELL) {
+        for (int i = 0; i < intent->argc; i++) {
+            if (!validate_input_whitelist(intent->args[i])) {
+                log_msg(LOG_WARN, "Input validation failed: invalid characters in argument");
+                return 0;
+            }
+        }
+    }
+#endif
+
+    // Replace ARG0 to ARG9
+    for (int i = 0; i < intent->argc && i < MAX_ARGS; i++) {
+        char placeholder[16];
+        sprintf(placeholder, "{ARG%d}", i);
+        if (strstr(out_cmd, placeholder)) {
+            replace_placeholder(out_cmd, placeholder, intent->args[i]);
         }
     }
 

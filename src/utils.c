@@ -58,3 +58,69 @@ void copy_to_clipboard(const char *text) {
     // Remove the temporary file
     remove(tmp_file);
 }
+
+int validate_input_whitelist(const char *input) {
+    if (!input) return 0;
+    for (int i = 0; input[i]; i++) {
+        char c = input[i];
+        if (!(isalnum((unsigned char)c) || c == '_' || c == '.' || c == '-' || c == '/' || c == '\\' || c == ' ')) {
+            return 0; // Invalid character found
+        }
+    }
+    return 1;
+}
+
+void tokenize_command(const char *cmd, char **argv, int *argc) {
+    *argc = 0;
+    if (!cmd) return;
+    
+    char *buffer = strdup(cmd);
+    if (!buffer) return;
+    
+    char *p = buffer;
+    while (*p) {
+        while (*p && isspace((unsigned char)*p)) p++;
+        if (!*p) break;
+        
+        char *token_start = p;
+        char quote = 0;
+        char *write_ptr = token_start;
+        
+        while (*p) {
+            if (*p == '\\' && *(p+1)) {
+                p++;
+                *write_ptr++ = *p++;
+            } else if (quote == 0 && (*p == '"' || *p == '\'')) {
+                quote = *p++;
+            } else if (quote != 0 && *p == quote) {
+                quote = 0;
+                p++;
+            } else if (quote == 0 && isspace((unsigned char)*p)) {
+                break;
+            } else {
+                *write_ptr++ = *p++;
+            }
+        }
+        
+        int ended_at_space = isspace((unsigned char)*p);
+        if (*p) p++;
+        *write_ptr = '\0';
+        
+        argv[*argc] = strdup(token_start);
+        (*argc)++;
+        
+        if (!ended_at_space) {
+            break;
+        }
+    }
+    
+    argv[*argc] = NULL;
+    free(buffer);
+}
+
+void free_tokens(char **argv, int argc) {
+    for (int i = 0; i < argc; i++) {
+        free(argv[i]);
+        argv[i] = NULL;
+    }
+}

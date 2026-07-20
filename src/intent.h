@@ -2,11 +2,13 @@
 #define INTENT_H
 
 #define MAX_STR_LEN 256
+#define MAX_ARGS 10
 
 typedef struct {
     char action[MAX_STR_LEN];
     char object[MAX_STR_LEN];
-    char target[MAX_STR_LEN];
+    char args[MAX_ARGS][MAX_STR_LEN];
+    int argc;
 } Intent;
 
 /**

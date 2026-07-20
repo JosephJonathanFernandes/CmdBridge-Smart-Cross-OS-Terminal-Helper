@@ -19,6 +19,6 @@ int load_explanations(ExplainEntry *entries);
 /**
  * Parses and explains a terminal command token by token.
  */
-void explain_command(const char *cmd, ExplainEntry *entries, int num_entries);
+void explain_command(int argc, char args[][256], ExplainEntry *entries, int num_entries);
 
 #endif // EXPLAIN_H
