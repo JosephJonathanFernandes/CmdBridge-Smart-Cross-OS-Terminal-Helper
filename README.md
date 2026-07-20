@@ -38,12 +38,14 @@ Operating System
 | ------------------ | ----------------------- |
 | **Version**        | v0.3.0                  |
 | **Commands**       | 10                      |
-| **Platforms**      | Windows, Linux, macOS   |
+| **Platforms**      | Windows, Linux, macOS*  |
 | **Tests**          | 211 Passing             |
 | **Coverage**       | 94%                     |
 | **Memory Leaks**   | 0                       |
 | **CI**             | Passing                 |
 | **License**        | MIT                     |
+
+*\*macOS is architecturally supported via POSIX APIs but not explicitly verified in automated CI.*
 
 ## Why use CmdBridge?
 
