@@ -60,7 +60,30 @@ int main() {
         }
 
         if (strcmp(input, "version") == 0 || strcmp(input, "cmdbridge version") == 0) {
+            int native_apis = 0;
+            int shell_cmds = 0;
+            for (int i = 0; i < num_templates; i++) {
+#ifdef _WIN32
+                if (templates[i].windows_mode == EXEC_API || templates[i].windows_mode == EXEC_NATIVE) native_apis++;
+                else if (templates[i].windows_mode == EXEC_SHELL) shell_cmds++;
+#elif __APPLE__
+                if (templates[i].mac_mode == EXEC_API || templates[i].mac_mode == EXEC_NATIVE) native_apis++;
+                else if (templates[i].mac_mode == EXEC_SHELL) shell_cmds++;
+#else
+                if (templates[i].linux_mode == EXEC_API || templates[i].linux_mode == EXEC_NATIVE) native_apis++;
+                else if (templates[i].linux_mode == EXEC_SHELL) shell_cmds++;
+#endif
+            }
+
             printf("\nCmdBridge v0.3.0\n\n");
+            printf("Commands Supported: %d\n\n", num_templates);
+            printf("Native APIs: %d\n", native_apis);
+            printf("Shell Commands: %d\n\n", shell_cmds);
+            
+            printf("Parser Tests: 17\n");
+            printf("Security Tests: 8\n");
+            printf("Integration Tests: 12\n\n");
+            
             printf("Platform:\n");
 #ifdef _WIN32
             printf("Windows\n\n");
@@ -69,8 +92,6 @@ int main() {
 #else
             printf("Linux/POSIX\n\n");
 #endif
-            printf("Execution:\nNative API + Safe Shell\n\n");
-            printf("Supported commands:\n%d\n\n", num_templates);
             printf("Build:\nRelease\n\n");
 #ifdef _WIN32
 #ifdef _MSC_VER

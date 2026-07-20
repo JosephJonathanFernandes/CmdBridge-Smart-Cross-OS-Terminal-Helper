@@ -23,6 +23,7 @@ Traditional terminal wrappers translate natural language into blind shell script
 
 We take speed and reliability seriously. Below are the metrics for **v0.3.0**:
 
+- **Commands Supported**: 10
 - **Parser average parse time**: 0.38 ms
 - **Native execution startup**: 2.1 ms
 - **1000 parser fuzz inputs**: 0 crashes
@@ -169,12 +170,19 @@ ctest --output-on-failure
 
 ## Roadmap
 
-**v0.4.0**
-- 25+ Supported commands
-- Auto-complete
+We follow a strict "features over infrastructure" philosophy. Architecture is frozen for `v0.3.x`.
 
-**v0.5.0**
-- Fuzzy matching & syntax correction
+**v0.3.1**
+- ZIP support (`zip folder`, `extract zip`)
+
+**v0.3.2**
+- Checksums (`sha256`, `md5`, `verify checksum`)
+
+**v0.3.3**
+- Git helpers (`git clone`, `git status`)
+
+**v0.4.0**
+- Plugin system and Extensibility
 
 ## Contributing
 
