@@ -60,5 +60,12 @@ jobs:
     - name: Generate Coverage Report
       run: |
         lcov --capture --directory build_coverage --output-file coverage.info
-        lcov --remove coverage.info '/usr/*' '*/tests/*' --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' '*/tests/*' '*/benchmarks/*' --output-file coverage.info
         lcov --list coverage.info
+        
+    - name: Post Coverage Summary
+      run: |
+        echo "### Code Coverage" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        lcov --summary coverage.info >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

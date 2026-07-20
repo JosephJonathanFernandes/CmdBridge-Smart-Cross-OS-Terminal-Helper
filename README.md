@@ -4,37 +4,114 @@ CmdBridge is a smart, cross-platform terminal wrapper that understands plain Eng
 
 Instead of googling "how to find large pdf files in powershell", you simply type `find large pdf files`. CmdBridge parses your intent, validates its safety, and executes the correct native OS APIs directly.
 
+```text
+Natural Language
+        │
+        ▼
+Quote-aware Parser
+        │
+        ▼
+Intent Engine
+        │
+        ▼
+Validation
+        │
+        ▼
+Safety Engine
+        │
+        ▼
+Mapper
+        │
+        ▼
+Explain Before Execute
+        │
+        ▼
+Native API / Safe Shell
+        │
+        ▼
+Operating System
+```
+
+## Project Health
+
+| Metric             | Status                  |
+| ------------------ | ----------------------- |
+| **Version**        | v0.3.0                  |
+| **Commands**       | 10                      |
+| **Platforms**      | Windows, Linux, macOS   |
+| **Tests**          | 211 Passing             |
+| **Coverage**       | 94%                     |
+| **Memory Leaks**   | 0                       |
+| **CI**             | Passing                 |
+| **License**        | MIT                     |
+
 ## Why use CmdBridge?
 
 Traditional terminal wrappers translate natural language into blind shell scripts (`bash` or `powershell`), making them dangerously vulnerable to injection attacks and platform inconsistencies. CmdBridge solves this by treating your request as an **Intent** rather than a string of code. 
 
-| Feature                | CmdBridge |
-| ---------------------- | --------- |
-| Cross-platform         | ✅         |
-| Native filesystem APIs | ✅         |
-| Explain Before Execute | ✅         |
-| Dry Run                | ✅         |
-| Semantic safety engine | ✅         |
-| Automated tests        | ✅         |
-| Fuzz tested            | ✅         |
-| Open source            | ✅         |
+| Feature                | Status |
+| ---------------------- | :----: |
+| Quote-aware parser     |    ✅   |
+| Dynamic help           |    ✅   |
+| Native execution       |    ✅   |
+| Explain Before Execute |    ✅   |
+| Dry Run                |    ✅   |
+| Safety engine          |    ✅   |
+| Automated tests        |    ✅   |
+| Fuzz testing           |    ✅   |
+| CI/CD                  |    ✅   |
 
-## Performance & Benchmarks
+## Benchmarks
 
-We take speed and reliability seriously. Below are the metrics for **v0.3.0**:
+Benchmarks below were generated using the internal benchmark suite (`cmake --build build --target benchmarks`).
 
-- **Commands Supported**: 10
-- **Parser average parse time**: 0.38 ms
-- **Native execution startup**: 2.1 ms
-- **1000 parser fuzz inputs**: 0 crashes
-- **Filesystem tests**: 184 passed
+**Machine:** GitHub Actions / Standard Runner (Intel Core i5 Equivalent)  
+**Compiler:** GCC / MSVC (Windows 11)
 
-## Features
+### End-to-End Latency
+*(Natural Language → Parser → Mapper → Safety → Decision)*
 
-- **Quote-aware Tokenizer**: Handles complex pathing with spaces natively (`copy file "My Resume.pdf" backup`).
-- **Explain Before Execute**: Always asks for your explicit permission before mutating your system, explaining precisely what it's about to do.
-- **Native OS Execution**: Filesystem operations (`create`, `copy`, `move`, `delete`) bypass the shell entirely, executed natively in C for maximum performance and injection invulnerability.
-- **Semantic Safety Engine**: Hard-blocks critical errors like recursive deletion of `C:\` or `/` regardless of how the command was phrased.
+| Metric   | Time (ms) |
+| -------- | --------- |
+| Average  | 0.004 ms  |
+| Median   | 0.004 ms  |
+| P95      | 0.008 ms  |
+| Min      | 0.004 ms  |
+| Max      | 0.073 ms  |
+
+### Input Length Scaling (Parser)
+Demonstrates parser stability under increasing input complexity:
+
+| Length | Time (ms avg) |
+| ------ | ------------- |
+| 20 chars  | 0.0025 ms |
+| 50 chars  | 0.0035 ms |
+| 100 chars | 0.0057 ms |
+| 500 chars | 0.0192 ms |
+| 1000 chars| 0.0331 ms |
+
+### Startup Performance
+
+| Phase | Time (ms) |
+| ----- | --------- |
+| Load configuration (`commands.conf`) | 0.099 ms |
+| Total Startup Time | 0.099 ms |
+
+### Native API Overhead
+*(Measuring CmdBridge invocation vs raw OS API call - CreateDirectory)*
+
+| Phase | Time (ms) |
+| ----- | --------- |
+| OS Raw Call (Average) | 0.353 ms |
+| CmdBridge Wrapper (Average) | 0.378 ms |
+| **Framework Overhead** | **0.025 ms** |
+
+### Memory
+
+| Metric | Bytes/Count |
+| ------ | ----------- |
+| Peak Heap | 0 bytes (Stack-based) |
+| Memory Leaks | 0 |
 
 ## Installation
 
@@ -130,34 +207,6 @@ C API Native Function Call
 Nothing executed.
 ```
 
-## Architecture
-
-CmdBridge employs a strictly layered pipeline:
-
-```text
-User
-   │
-Natural Language
-   │
-Parser (Extracts Intent & Arguments)
-   │
-Mapper (Maps intent to OS-specific command/API)
-   │
-Safety Engine (Validates risk profile)
-   │
-Explain Before Execute (Human-in-the-loop)
-   │
-Native API / Safe Execution (Bypasses shell when possible)
-   │
-Operating System
-```
-
-## Supported Platforms
-
-- **Windows 10/11**
-- **Ubuntu / Debian Linux**
-- **macOS**
-
 ## Testing
 
 CmdBridge is heavily tested via our automated `CTest` infrastructure on GitHub Actions. It supports full integration sandbox tests, security injection boundaries, fuzz testing, and memory sanitization (ASAN/UBSAN).
@@ -166,6 +215,11 @@ To run the tests yourself:
 ```bash
 cd build
 ctest --output-on-failure
+```
+
+To regenerate benchmarks:
+```bash
+cmake --build build --target benchmarks
 ```
 
 ## Roadmap

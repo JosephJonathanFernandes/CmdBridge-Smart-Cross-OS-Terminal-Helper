@@ -80,6 +80,30 @@ add_cmdbridge_test(integration_tests tests/integration_tests.c)
 add_cmdbridge_test(security_tests tests/security_tests.c)
 add_cmdbridge_test(fuzz_tests tests/fuzz_tests.c)
 
+# Benchmarks
+macro(add_cmdbridge_benchmark BENCH_NAME SRC_FILE)
+    add_executable(${BENCH_NAME} ${SRC_FILE})
+    target_link_libraries(${BENCH_NAME} smart_terminal_core)
+    # Don't add it to ctest, keep it separate for the benchmarks target
+    add_custom_target(run_${BENCH_NAME} COMMAND ${BENCH_NAME} DEPENDS ${BENCH_NAME})
+    list(APPEND BENCHMARK_TARGETS run_${BENCH_NAME})
+endmacro()
+
+add_cmdbridge_benchmark(benchmark_parser benchmarks/benchmark_parser.c)
+add_cmdbridge_benchmark(benchmark_mapper benchmarks/benchmark_mapper.c)
+add_cmdbridge_benchmark(benchmark_safety benchmarks/benchmark_safety.c)
+add_cmdbridge_benchmark(benchmark_startup benchmarks/benchmark_startup.c)
+add_cmdbridge_benchmark(benchmark_end_to_end benchmarks/benchmark_end_to_end.c)
+add_cmdbridge_benchmark(benchmark_native_api benchmarks/benchmark_native_api.c)
+
+# Memory benchmark doesn't link to core, it includes files directly
+add_executable(benchmark_memory benchmarks/benchmark_memory.c)
+add_custom_target(run_benchmark_memory COMMAND benchmark_memory DEPENDS benchmark_memory)
+list(APPEND BENCHMARK_TARGETS run_benchmark_memory)
+
+# Custom target to run all benchmarks
+add_custom_target(benchmarks DEPENDS ${BENCHMARK_TARGETS})
+
 # Installation support
 install(TARGETS smart_terminal DESTINATION bin)
 install(DIRECTORY config DESTINATION bin)
