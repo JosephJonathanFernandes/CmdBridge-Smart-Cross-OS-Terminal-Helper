@@ -37,9 +37,14 @@ int load_command_templates(CommandTemplate *templates) {
         line[strcspn(line, "\r\n")] = '\0';
         if (strlen(line) == 0 || line[0] == '#') continue;
 
-        // Simple split by '|'
-        // Format: action|object|linux_mode|linux|win_mode|windows|mac_mode|mac
+        // Format: category|example|action|object|linux_mode|linux|win_mode|windows|mac_mode|mac
         char *token = strtok(line, "|");
+        if (token) strncpy(templates[count].category, token, sizeof(templates[count].category) - 1);
+        
+        token = strtok(NULL, "|");
+        if (token) strncpy(templates[count].example, token, sizeof(templates[count].example) - 1);
+        
+        token = strtok(NULL, "|");
         if (token) strncpy(templates[count].action, token, sizeof(templates[count].action) - 1);
         
         token = strtok(NULL, "|");
@@ -60,7 +65,7 @@ int load_command_templates(CommandTemplate *templates) {
         token = strtok(NULL, "|");
         if (token) strncpy(templates[count].mac_cmd, token, sizeof(templates[count].mac_cmd) - 1);
 
-        log_msg(LOG_DEBUG, "Loaded command template: %s %s", templates[count].action, templates[count].object);
+        log_msg(LOG_DEBUG, "Loaded command template: [%s] %s %s", templates[count].category, templates[count].action, templates[count].object);
         count++;
     }
 

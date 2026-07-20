@@ -11,6 +11,8 @@ typedef enum {
 } ExecutionMode;
 
 typedef struct {
+    char category[50];
+    char example[100];
     char action[50];
     char object[50];
     ExecutionMode linux_mode;

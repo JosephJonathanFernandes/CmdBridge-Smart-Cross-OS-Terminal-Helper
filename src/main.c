@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #ifdef _WIN32
 #include <process.h>
@@ -23,10 +24,10 @@
 
 int main() {
     logger_init(LOG_INFO);
-    log_msg(LOG_INFO, "Starting Smart Terminal Assistant (MVP)");
+    log_msg(LOG_INFO, "Starting Smart Terminal Assistant (v0.3.0)");
 
-    printf("Smart Terminal Assistant (MVP)\n");
-    printf("Type 'exit' to quit.\n");
+    printf("CmdBridge v0.3.0\n");
+    printf("Type 'help' for a list of commands, or 'exit' to quit.\n");
 
     CommandTemplate templates[MAX_TEMPLATES];
     int num_templates = load_command_templates(templates);
@@ -56,6 +57,76 @@ int main() {
         if (strlen(input) == 0) continue;
         if (strcmp(input, "exit") == 0 || strcmp(input, "quit") == 0) {
             break;
+        }
+
+        if (strcmp(input, "version") == 0 || strcmp(input, "cmdbridge version") == 0) {
+            printf("\nCmdBridge v0.3.0\n\n");
+            printf("Platform:\n");
+#ifdef _WIN32
+            printf("Windows\n\n");
+#elif __APPLE__
+            printf("macOS\n\n");
+#else
+            printf("Linux/POSIX\n\n");
+#endif
+            printf("Execution:\nNative API + Safe Shell\n\n");
+            printf("Supported commands:\n%d\n\n", num_templates);
+            printf("Build:\nRelease\n\n");
+#ifdef _WIN32
+#ifdef _MSC_VER
+            printf("Compiler:\nMSVC\n\n");
+#elif defined(__GNUC__)
+            printf("Compiler:\nGCC (MinGW)\n\n");
+#endif
+#else
+            printf("Compiler:\nGCC/Clang\n\n");
+#endif
+            continue;
+        }
+
+        if (strcmp(input, "help") == 0) {
+            printf("\nCmdBridge v0.3.0\n\n");
+            const char* categories[20];
+            int num_cat = 0;
+            
+            for (int i = 0; i < num_templates; i++) {
+                int found = 0;
+                for (int j = 0; j < num_cat; j++) {
+                    if (strcmp(categories[j], templates[i].category) == 0) {
+                        found = 1; break;
+                    }
+                }
+                if (!found && num_cat < 20) {
+                    categories[num_cat++] = templates[i].category;
+                }
+            }
+            
+            for (int i = 0; i < num_cat; i++) {
+                char cat_upper[50];
+                strncpy(cat_upper, categories[i], 49);
+                cat_upper[49] = '\0';
+                for (int j = 0; cat_upper[j]; j++) cat_upper[j] = toupper((unsigned char)cat_upper[j]);
+                
+                printf("%s\n", cat_upper);
+                printf("────────────────────────────\n");
+                for (int k = 0; k < num_templates; k++) {
+                    if (strcmp(templates[k].category, categories[i]) == 0) {
+                        printf("%s\n", templates[k].example);
+                    }
+                }
+                printf("\n");
+            }
+            
+            printf("UTILITIES\n");
+            printf("────────────────────────────\n");
+            printf("history\n");
+            printf("explain [command]\n");
+            printf("help\n");
+            printf("version\n\n");
+            printf("Type any command in plain English.\n");
+            printf("Example:\n> copy file \"My Resume.pdf\" backup\n");
+            
+            continue;
         }
 
         if (strcmp(input, "history") == 0) {
