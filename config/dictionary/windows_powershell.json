@@ -3,12 +3,21 @@
   "shell": "powershell",
   "os": "windows",
   "commands": {
+    "change_directory": {
+      "intent": "INTENT_CHANGE_DIRECTORY",
+      "command": "Set-Location",
+      "flags": {}
+    },
+    "print_working_directory": {
+      "intent": "INTENT_PRINT_WORKING_DIRECTORY",
+      "command": "Get-Location",
+      "flags": {}
+    },
     "list_directory": {
       "intent": "INTENT_LIST_DIRECTORY",
       "command": "Get-ChildItem",
       "flags": {
-        "-Hidden": "show_hidden",
-        "-Force": "force"
+        "-Hidden": "show_hidden"
       }
     },
     "delete_file": {
@@ -26,16 +35,79 @@
         "-Force": "force"
       }
     },
+    "create_directory": {
+      "intent": "INTENT_CREATE_DIRECTORY",
+      "command": "New-Item -ItemType Directory",
+      "flags": {}
+    },
+    "create_file": {
+      "intent": "INTENT_CREATE_FILE",
+      "command": "New-Item -ItemType File",
+      "flags": {}
+    },
     "copy_file": {
       "intent": "INTENT_COPY_FILE",
       "command": "Copy-Item",
       "flags": {
-        "-Force": "force"
+        "-Force": "force",
+        "-Recurse": "recursive"
       }
     },
     "move_file": {
       "intent": "INTENT_MOVE_FILE",
       "command": "Move-Item",
+      "flags": {
+        "-Force": "force"
+      }
+    },
+    "search_files": {
+      "intent": "INTENT_SEARCH_FILES",
+      "command": "Get-ChildItem -Recurse",
+      "flags": {}
+    },
+    "search_text": {
+      "intent": "INTENT_SEARCH_TEXT",
+      "command": "Select-String",
+      "flags": {}
+    },
+    "view_text": {
+      "intent": "INTENT_VIEW_TEXT",
+      "command": "Get-Content",
+      "flags": {}
+    },
+    "view_text_paginated": {
+      "intent": "INTENT_VIEW_TEXT_PAGINATED",
+      "command": "Get-Content | Out-Host -Paging",
+      "flags": {}
+    },
+    "view_text_start": {
+      "intent": "INTENT_VIEW_TEXT_START",
+      "command": "Get-Content -TotalCount 10",
+      "flags": {}
+    },
+    "view_text_end": {
+      "intent": "INTENT_VIEW_TEXT_END",
+      "command": "Get-Content -Tail 10",
+      "flags": {}
+    },
+    "set_env": {
+      "intent": "INTENT_SET_ENV",
+      "command": "$env:",
+      "flags": {}
+    },
+    "get_env": {
+      "intent": "INTENT_GET_ENV",
+      "command": "Get-ChildItem Env:",
+      "flags": {}
+    },
+    "list_processes": {
+      "intent": "INTENT_LIST_PROCESSES",
+      "command": "Get-Process",
+      "flags": {}
+    },
+    "kill_process": {
+      "intent": "INTENT_KILL_PROCESS",
+      "command": "Stop-Process",
       "flags": {
         "-Force": "force"
       }

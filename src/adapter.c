@@ -22,33 +22,69 @@ bool adapt_ir_to_native(const ExecutionIR* ir, const char* target_os, const char
     char cmd_str[512];
     snprintf(cmd_str, sizeof(cmd_str), "%s", mapping->command);
     
-    // Add flags back
+    // Check flags
+    bool missing_flag = false;
+    char missing_flag_name[32] = {0};
+
     if (ir->show_hidden) {
+        bool found = false;
         for (int i = 0; i < mapping->flag_count; i++) {
             if (strcmp(mapping->flags[i].semantic_meaning, "show_hidden") == 0) {
                 strcat(cmd_str, " ");
                 strcat(cmd_str, mapping->flags[i].flag);
+                found = true;
                 break;
             }
         }
+        if (!found) { missing_flag = true; strcpy(missing_flag_name, "show_hidden"); }
+    }
+    if (ir->long_format) {
+        bool found = false;
+        for (int i = 0; i < mapping->flag_count; i++) {
+            if (strcmp(mapping->flags[i].semantic_meaning, "long_format") == 0) {
+                strcat(cmd_str, " ");
+                strcat(cmd_str, mapping->flags[i].flag);
+                found = true;
+                break;
+            }
+        }
+        if (!found) { missing_flag = true; strcpy(missing_flag_name, "long_format"); }
     }
     if (ir->recursive) {
+        bool found = false;
         for (int i = 0; i < mapping->flag_count; i++) {
             if (strcmp(mapping->flags[i].semantic_meaning, "recursive") == 0) {
                 strcat(cmd_str, " ");
                 strcat(cmd_str, mapping->flags[i].flag);
+                found = true;
                 break;
             }
         }
+        if (!found) { missing_flag = true; strcpy(missing_flag_name, "recursive"); }
     }
     if (ir->force) {
+        bool found = false;
         for (int i = 0; i < mapping->flag_count; i++) {
             if (strcmp(mapping->flags[i].semantic_meaning, "force") == 0) {
                 strcat(cmd_str, " ");
                 strcat(cmd_str, mapping->flags[i].flag);
+                found = true;
                 break;
             }
         }
+        if (!found) { missing_flag = true; strcpy(missing_flag_name, "force"); }
+    }
+    if (ir->quiet) {
+        bool found = false;
+        for (int i = 0; i < mapping->flag_count; i++) {
+            if (strcmp(mapping->flags[i].semantic_meaning, "quiet") == 0) {
+                strcat(cmd_str, " ");
+                strcat(cmd_str, mapping->flags[i].flag);
+                found = true;
+                break;
+            }
+        }
+        if (!found) { missing_flag = true; strcpy(missing_flag_name, "quiet"); }
     }
     
     // Append targets
@@ -62,9 +98,20 @@ bool adapt_ir_to_native(const ExecutionIR* ir, const char* target_os, const char
     }
     
     strncpy(out_cmd->native_command, cmd_str, sizeof(out_cmd->native_command) - 1);
-    out_cmd->score.confidence = 100;
-    out_cmd->score.compatibility = 100;
-    out_cmd->score.native_score = 100;
+    
+    if (missing_flag) {
+        out_cmd->score.confidence = 70;
+        out_cmd->score.compatibility = 70;
+        out_cmd->score.native_score = 70;
+        out_cmd->score.reason = REASON_FLAG_NOT_AVAILABLE;
+        snprintf(out_cmd->score.suggested_alternative, sizeof(out_cmd->score.suggested_alternative), "No direct flag for '%s'. Check native docs.", missing_flag_name);
+    } else {
+        out_cmd->score.confidence = 100;
+        out_cmd->score.compatibility = 100;
+        out_cmd->score.native_score = 100;
+        out_cmd->score.reason = REASON_DIRECT_MAPPING;
+        strcpy(out_cmd->score.suggested_alternative, "None required.");
+    }
     
     strncpy(out_cmd->target_os, target_os, sizeof(out_cmd->target_os) - 1);
     strncpy(out_cmd->target_shell, target_shell, sizeof(out_cmd->target_shell) - 1);

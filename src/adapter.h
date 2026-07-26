@@ -9,6 +9,8 @@ typedef struct {
     int confidence; // 0 to 100
     int compatibility; // 0 to 100
     int native_score; // 0 to 100
+    ReasonCode reason;
+    char suggested_alternative[256];
 } AdapterScore;
 
 // Represents an adapted native command mapping

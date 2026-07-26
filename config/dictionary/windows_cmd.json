@@ -3,6 +3,16 @@
   "shell": "cmd",
   "os": "windows",
   "commands": {
+    "change_directory": {
+      "intent": "INTENT_CHANGE_DIRECTORY",
+      "command": "cd",
+      "flags": {}
+    },
+    "print_working_directory": {
+      "intent": "INTENT_PRINT_WORKING_DIRECTORY",
+      "command": "cd",
+      "flags": {}
+    },
     "list_directory": {
       "intent": "INTENT_LIST_DIRECTORY",
       "command": "dir",
@@ -14,7 +24,8 @@
       "intent": "INTENT_DELETE_FILE",
       "command": "del",
       "flags": {
-        "/f": "force"
+        "/f": "force",
+        "/s": "recursive"
       }
     },
     "delete_directory": {
@@ -22,8 +33,18 @@
       "command": "rmdir",
       "flags": {
         "/s": "recursive",
-        "/q": "quiet"
+        "/q": "force"
       }
+    },
+    "create_directory": {
+      "intent": "INTENT_CREATE_DIRECTORY",
+      "command": "mkdir",
+      "flags": {}
+    },
+    "create_file": {
+      "intent": "INTENT_CREATE_FILE",
+      "command": "type nul >",
+      "flags": {}
     },
     "copy_file": {
       "intent": "INTENT_COPY_FILE",
@@ -37,6 +58,61 @@
       "command": "move",
       "flags": {
         "/y": "force"
+      }
+    },
+    "search_files": {
+      "intent": "INTENT_SEARCH_FILES",
+      "command": "dir /s /b",
+      "flags": {}
+    },
+    "search_text": {
+      "intent": "INTENT_SEARCH_TEXT",
+      "command": "findstr",
+      "flags": {
+        "/i": "ignore_case",
+        "/s": "recursive"
+      }
+    },
+    "view_text": {
+      "intent": "INTENT_VIEW_TEXT",
+      "command": "type",
+      "flags": {}
+    },
+    "view_text_paginated": {
+      "intent": "INTENT_VIEW_TEXT_PAGINATED",
+      "command": "more",
+      "flags": {}
+    },
+    "view_text_start": {
+      "intent": "INTENT_VIEW_TEXT_START",
+      "command": "more",
+      "flags": {}
+    },
+    "view_text_end": {
+      "intent": "INTENT_VIEW_TEXT_END",
+      "command": "more",
+      "flags": {}
+    },
+    "set_env": {
+      "intent": "INTENT_SET_ENV",
+      "command": "set",
+      "flags": {}
+    },
+    "get_env": {
+      "intent": "INTENT_GET_ENV",
+      "command": "set",
+      "flags": {}
+    },
+    "list_processes": {
+      "intent": "INTENT_LIST_PROCESSES",
+      "command": "tasklist",
+      "flags": {}
+    },
+    "kill_process": {
+      "intent": "INTENT_KILL_PROCESS",
+      "command": "taskkill",
+      "flags": {
+        "/f": "force"
       }
     }
   }

@@ -3,6 +3,16 @@
   "shell": "bash",
   "os": "linux",
   "commands": {
+    "change_directory": {
+      "intent": "INTENT_CHANGE_DIRECTORY",
+      "command": "cd",
+      "flags": {}
+    },
+    "print_working_directory": {
+      "intent": "INTENT_PRINT_WORKING_DIRECTORY",
+      "command": "pwd",
+      "flags": {}
+    },
     "list_directory": {
       "intent": "INTENT_LIST_DIRECTORY",
       "command": "ls",
@@ -26,11 +36,22 @@
         "-f": "force"
       }
     },
+    "create_directory": {
+      "intent": "INTENT_CREATE_DIRECTORY",
+      "command": "mkdir",
+      "flags": {}
+    },
+    "create_file": {
+      "intent": "INTENT_CREATE_FILE",
+      "command": "touch",
+      "flags": {}
+    },
     "copy_file": {
       "intent": "INTENT_COPY_FILE",
       "command": "cp",
       "flags": {
-        "-f": "force"
+        "-f": "force",
+        "-r": "recursive"
       }
     },
     "move_file": {
@@ -38,6 +59,61 @@
       "command": "mv",
       "flags": {
         "-f": "force"
+      }
+    },
+    "search_files": {
+      "intent": "INTENT_SEARCH_FILES",
+      "command": "find",
+      "flags": {}
+    },
+    "search_text": {
+      "intent": "INTENT_SEARCH_TEXT",
+      "command": "grep",
+      "flags": {
+        "-i": "ignore_case",
+        "-r": "recursive"
+      }
+    },
+    "view_text": {
+      "intent": "INTENT_VIEW_TEXT",
+      "command": "cat",
+      "flags": {}
+    },
+    "view_text_paginated": {
+      "intent": "INTENT_VIEW_TEXT_PAGINATED",
+      "command": "less",
+      "flags": {}
+    },
+    "view_text_start": {
+      "intent": "INTENT_VIEW_TEXT_START",
+      "command": "head",
+      "flags": {}
+    },
+    "view_text_end": {
+      "intent": "INTENT_VIEW_TEXT_END",
+      "command": "tail",
+      "flags": {}
+    },
+    "set_env": {
+      "intent": "INTENT_SET_ENV",
+      "command": "export",
+      "flags": {}
+    },
+    "get_env": {
+      "intent": "INTENT_GET_ENV",
+      "command": "printenv",
+      "flags": {}
+    },
+    "list_processes": {
+      "intent": "INTENT_LIST_PROCESSES",
+      "command": "ps",
+      "flags": {}
+    },
+    "kill_process": {
+      "intent": "INTENT_KILL_PROCESS",
+      "command": "kill",
+      "flags": {
+        "-9": "force"
       }
     }
   }

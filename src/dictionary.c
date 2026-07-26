@@ -6,11 +6,25 @@
 #include <string.h>
 
 OperationIntent parse_intent_string(const char* str) {
+    if (strcmp(str, "INTENT_CHANGE_DIRECTORY") == 0) return INTENT_CHANGE_DIRECTORY;
+    if (strcmp(str, "INTENT_PRINT_WORKING_DIRECTORY") == 0) return INTENT_PRINT_WORKING_DIRECTORY;
     if (strcmp(str, "INTENT_LIST_DIRECTORY") == 0) return INTENT_LIST_DIRECTORY;
-    if (strcmp(str, "INTENT_DELETE_FILE") == 0) return INTENT_DELETE_FILE;
-    if (strcmp(str, "INTENT_DELETE_DIRECTORY") == 0) return INTENT_DELETE_DIRECTORY;
     if (strcmp(str, "INTENT_COPY_FILE") == 0) return INTENT_COPY_FILE;
     if (strcmp(str, "INTENT_MOVE_FILE") == 0) return INTENT_MOVE_FILE;
+    if (strcmp(str, "INTENT_DELETE_FILE") == 0) return INTENT_DELETE_FILE;
+    if (strcmp(str, "INTENT_DELETE_DIRECTORY") == 0) return INTENT_DELETE_DIRECTORY;
+    if (strcmp(str, "INTENT_CREATE_DIRECTORY") == 0) return INTENT_CREATE_DIRECTORY;
+    if (strcmp(str, "INTENT_CREATE_FILE") == 0) return INTENT_CREATE_FILE;
+    if (strcmp(str, "INTENT_SEARCH_FILES") == 0) return INTENT_SEARCH_FILES;
+    if (strcmp(str, "INTENT_SEARCH_TEXT") == 0) return INTENT_SEARCH_TEXT;
+    if (strcmp(str, "INTENT_VIEW_TEXT") == 0) return INTENT_VIEW_TEXT;
+    if (strcmp(str, "INTENT_VIEW_TEXT_PAGINATED") == 0) return INTENT_VIEW_TEXT_PAGINATED;
+    if (strcmp(str, "INTENT_VIEW_TEXT_START") == 0) return INTENT_VIEW_TEXT_START;
+    if (strcmp(str, "INTENT_VIEW_TEXT_END") == 0) return INTENT_VIEW_TEXT_END;
+    if (strcmp(str, "INTENT_SET_ENV") == 0) return INTENT_SET_ENV;
+    if (strcmp(str, "INTENT_GET_ENV") == 0) return INTENT_GET_ENV;
+    if (strcmp(str, "INTENT_LIST_PROCESSES") == 0) return INTENT_LIST_PROCESSES;
+    if (strcmp(str, "INTENT_KILL_PROCESS") == 0) return INTENT_KILL_PROCESS;
     return INTENT_UNKNOWN;
 }
 
