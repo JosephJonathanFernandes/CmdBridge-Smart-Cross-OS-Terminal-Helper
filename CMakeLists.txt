@@ -30,6 +30,13 @@ add_library(smart_terminal_core STATIC
     src/history.c
     src/aliases.c
     src/native_api/file_ops.c
+    third_party/cJSON/cJSON.c
+    src/dictionary.c
+    src/translator.c
+    src/capability.c
+    src/adapter.c
+    src/explainer.c
+    src/environment.c
 )
 
 if (WIN32)
@@ -38,7 +45,7 @@ else()
     target_sources(smart_terminal_core PRIVATE src/native_api/posix_file_ops.c)
 endif()
 
-target_include_directories(smart_terminal_core PUBLIC src)
+target_include_directories(smart_terminal_core PUBLIC src third_party/cJSON)
 
 # Build main executable
 add_executable(smart_terminal src/main.c)
@@ -80,6 +87,13 @@ add_cmdbridge_test(integration_tests tests/integration_tests.c)
 add_cmdbridge_test(security_tests tests/security_tests.c)
 add_cmdbridge_test(fuzz_tests tests/fuzz_tests.c)
 
+add_cmdbridge_test(test_dictionary tests/test_dictionary.c)
+add_cmdbridge_test(test_translator tests/test_translator.c)
+add_cmdbridge_test(test_adapter tests/test_adapter.c)
+add_cmdbridge_test(test_capability tests/test_capability.c)
+add_cmdbridge_test(test_explainer tests/test_explainer.c)
+add_cmdbridge_test(corpus_tester tests/corpus_tester.c)
+
 # Benchmarks
 macro(add_cmdbridge_benchmark BENCH_NAME SRC_FILE)
     add_executable(${BENCH_NAME} ${SRC_FILE})
@@ -95,6 +109,7 @@ add_cmdbridge_benchmark(benchmark_safety benchmarks/benchmark_safety.c)
 add_cmdbridge_benchmark(benchmark_startup benchmarks/benchmark_startup.c)
 add_cmdbridge_benchmark(benchmark_end_to_end benchmarks/benchmark_end_to_end.c)
 add_cmdbridge_benchmark(benchmark_native_api benchmarks/benchmark_native_api.c)
+add_cmdbridge_benchmark(benchmark_pipeline benchmarks/benchmark_pipeline.c)
 
 # Memory benchmark doesn't link to core, it includes files directly
 add_executable(benchmark_memory benchmarks/benchmark_memory.c)

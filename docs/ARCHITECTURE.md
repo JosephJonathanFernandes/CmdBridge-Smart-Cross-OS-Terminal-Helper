@@ -1,18 +1,48 @@
-# Architecture Overview
+# CmdBridge Architecture
 
-This project is structured using clean code and SOLID principles.
+CmdBridge is designed as a **cross-platform command compatibility framework**. It allows users to write commands in the vernacular they know best (e.g., Linux `ls`, Windows `dir`, or natural language), and the tool safely translates and executes them on any underlying system.
 
-## Module Breakdown
+The core design philosophy avoids direct 1-to-1 string substitution. Instead, it relies on an **Intent Engine** that parses input into an intermediate representation (IR).
 
-1. **`parser`**: Converts raw user strings into structured `Intent` (Action, Object, Target).
-2. **`commands`**: Handles reading the `commands.conf` configuration file to dynamically load supported capabilities.
-3. **`os_mapper`**: Evaluates the `Intent` against the loaded templates and dynamically assigns the correct string mapping based on the compile-time target OS.
-4. **`safety`**: The gatekeeper. Evaluates output strings against a blacklist of highly destructive operations.
-5. **`logger`**: Standardized logging utility for stdout/stderr telemetry.
+## Data Flow Pipeline
 
-## Data Flow
-`User Input -> parser -> Intent Struct -> os_mapper -> OS Command -> safety -> Output`
+The execution of a command follows a strict pipeline:
 
-## Design Decisions
-- **Why C?** C provides extreme performance and portability, ensuring the executable is a tiny dependency-free binary.
-- **Why Config-Driven?** Hardcoding templates in C violates the Open/Closed Principle. By shifting command templates to `commands.conf`, users can add new features without recompiling the executable.
+```text
+User Input
+    ↓
+[ Translator ]
+    ↓
+Execution IR (Intermediate Representation)
+    ↓
+[ Safety Analyzer ]
+    ↓
+[ Capability Resolver ]
+    ↓
+[ Adapter ]
+    ↓
+Native Command
+    ↓
+[ Execution ]
+```
+
+### 1. Translator
+Converts raw user input into an `ExecutionIR`. It uses dictionaries to match known verbs and flags to semantic operations (e.g., `INTENT_LIST_DIRECTORY`, `INTENT_DELETE_FILE`) and flags (e.g., `recursive`, `force`).
+
+### 2. Safety Analyzer
+Takes the `ExecutionIR` and assigns a risk level (e.g., `SAFE`, `WARNING`, `DANGEROUS`). This ensures that destructive operations like `rm -rf /` are caught semantically, regardless of whether the user typed `rm` or `del`.
+
+### 3. Capability Resolver
+Checks if the current operating system and shell can fulfill the requested `ExecutionIR`. It handles feature negotiation (e.g., if a shell does not support showing hidden files, this stage detects it).
+
+### 4. Adapter
+Converts the `ExecutionIR` into a native string suitable for the target OS and Shell. It generates an `AdapterScore` indicating confidence and native compatibility.
+
+## Key Abstractions
+
+- `ExecutionIR`: The core data structure representing *what* the user wants to do, completely divorced from *how* the operating system will do it.
+- `EnvironmentInfo`: Encapsulates detection of the host OS and Shell, using a layered fallback mechanism (CLI args -> Parent Process ID -> Environment Variables -> Default).
+
+## Extending CmdBridge
+
+Because of the IR architecture, adding support for a new shell (e.g., Fish, Nushell) or OS simply requires adding a new dictionary JSON file in `config/dictionary/`. The core C code does not need to be recompiled.
