@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "shell": "bash",
+  "os": "linux",
+  "commands": {
+    "list_directory": {
+      "intent": "INTENT_LIST_DIRECTORY",
+      "command": "ls",
+      "flags": {
+        "-a": "show_hidden",
+        "-l": "long_format"
+      }
+    },
+    "delete_file": {
+      "intent": "INTENT_DELETE_FILE",
+      "command": "rm",
+      "flags": {
+        "-f": "force"
+      }
+    },
+    "delete_directory": {
+      "intent": "INTENT_DELETE_DIRECTORY",
+      "command": "rm",
+      "flags": {
+        "-r": "recursive",
+        "-f": "force"
+      }
+    },
+    "copy_file": {
+      "intent": "INTENT_COPY_FILE",
+      "command": "cp",
+      "flags": {
+        "-f": "force"
+      }
+    },
+    "move_file": {
+      "intent": "INTENT_MOVE_FILE",
+      "command": "mv",
+      "flags": {
+        "-f": "force"
+      }
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "shell": "powershell",
+  "os": "windows",
+  "commands": {
+    "list_directory": {
+      "intent": "INTENT_LIST_DIRECTORY",
+      "command": "Get-ChildItem",
+      "flags": {
+        "-Hidden": "show_hidden",
+        "-Force": "force"
+      }
+    },
+    "delete_file": {
+      "intent": "INTENT_DELETE_FILE",
+      "command": "Remove-Item",
+      "flags": {
+        "-Force": "force"
+      }
+    },
+    "delete_directory": {
+      "intent": "INTENT_DELETE_DIRECTORY",
+      "command": "Remove-Item",
+      "flags": {
+        "-Recurse": "recursive",
+        "-Force": "force"
+      }
+    },
+    "copy_file": {
+      "intent": "INTENT_COPY_FILE",
+      "command": "Copy-Item",
+      "flags": {
+        "-Force": "force"
+      }
+    },
+    "move_file": {
+      "intent": "INTENT_MOVE_FILE",
+      "command": "Move-Item",
+      "flags": {
+        "-Force": "force"
+      }
+    }
+  }
+}

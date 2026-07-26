@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "shell": "cmd",
+  "os": "windows",
+  "commands": {
+    "list_directory": {
+      "intent": "INTENT_LIST_DIRECTORY",
+      "command": "dir",
+      "flags": {
+        "/a": "show_hidden"
+      }
+    },
+    "delete_file": {
+      "intent": "INTENT_DELETE_FILE",
+      "command": "del",
+      "flags": {
+        "/f": "force"
+      }
+    },
+    "delete_directory": {
+      "intent": "INTENT_DELETE_DIRECTORY",
+      "command": "rmdir",
+      "flags": {
+        "/s": "recursive",
+        "/q": "quiet"
+      }
+    },
+    "copy_file": {
+      "intent": "INTENT_COPY_FILE",
+      "command": "copy",
+      "flags": {
+        "/y": "force"
+      }
+    },
+    "move_file": {
+      "intent": "INTENT_MOVE_FILE",
+      "command": "move",
+      "flags": {
+        "/y": "force"
+      }
+    }
+  }
+}
