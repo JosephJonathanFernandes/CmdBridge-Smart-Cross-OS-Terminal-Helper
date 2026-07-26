@@ -10,6 +10,23 @@
 #include <sys/wait.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+static long long get_time_ns_main() {
+    LARGE_INTEGER freq, counter;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&counter);
+    return (counter.QuadPart * 1000000000LL) / freq.QuadPart;
+}
+#else
+#include <time.h>
+static long long get_time_ns_main() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000000000LL + ts.tv_nsec;
+}
+#endif
+
 #include "intent.h"
 #include "parser.h"
 #include "commands.h"
@@ -31,10 +48,13 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
     ExecutionIR ir;
     EnvironmentInfo env;
     
+    long long t_start = get_time_ns_main();
+    
     if (!detect_environment(&env, shell_override)) {
         if (trace_mode == 1) printf("[Environment] Failed to detect environment.\n");
         return;
     }
+    long long t_env = get_time_ns_main();
     
     if (trace_mode == 1) {
         printf("[Translator]\n");
@@ -43,22 +63,24 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
     }
 
     if (translate_input_to_ir(input, &ir)) {
+        long long t_parse = get_time_ns_main();
         if (trace_mode == 1) {
-            printf("\xE2\x9C\x93 Parsed command\n\n[Execution IR]\nAction: %d\nOptions:\n", ir.operation);
+            printf("\xE2\x9C\x93 Parsed command (Took: %.1f \xC2\xB5s, Total: %.1f \xC2\xB5s)\n\n[Execution IR]\nAction: %d\nOptions:\n", (t_parse - t_env)/1000.0, (t_parse - t_start)/1000.0, ir.operation);
             if (ir.show_hidden) printf("  show_hidden = true\n");
             if (ir.long_format) printf("  long_format = true\n");
             if (ir.recursive) printf("  recursive = true\n");
             if (ir.force) printf("  force = true\n");
             printf("Target: %s\n\n", ir.target);
         } else if (trace_mode == 2) {
-            printf("  { \"stage\": \"translator\", \"status\": \"success\", \"ir_action\": %d },\n", ir.operation);
+            printf("  { \"stage\": \"translator\", \"status\": \"success\", \"ir_action\": %d, \"latency_us\": %.1f, \"total_us\": %.1f },\n", ir.operation, (t_parse - t_env)/1000.0, (t_parse - t_start)/1000.0);
         }
 
         // Safety
+        long long t_safety = get_time_ns_main();
         if (trace_mode == 1) {
-            printf("[Safety]\n\xE2\x9C\x93 Passed\n\n");
+            printf("[Safety]\n\xE2\x9C\x93 Passed (Took: %.1f \xC2\xB5s, Total: %.1f \xC2\xB5s)\n\n", (t_safety - t_parse)/1000.0, (t_safety - t_start)/1000.0);
         } else if (trace_mode == 2) {
-            printf("  { \"stage\": \"safety\", \"status\": \"passed\" },\n");
+            printf("  { \"stage\": \"safety\", \"status\": \"passed\", \"latency_us\": %.1f, \"total_us\": %.1f },\n", (t_safety - t_parse)/1000.0, (t_safety - t_start)/1000.0);
         }
 
         // Capability
@@ -67,22 +89,29 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
         }
         
         CapabilitySupport cap = negotiate_capability(&ir, env.os, env.shell, "config/dictionary");
+        long long t_cap = get_time_ns_main();
+        
         if (cap != CAPABILITY_UNSUPPORTED) {
             if (trace_mode == 1) {
-                printf("\xE2\x9C\x93 Supported by %s %s (Confidence: %.2f)\n\n", env.os, env.shell, env.confidence);
+                printf("\xE2\x9C\x93 Supported by %s %s (Confidence: %.2f) (Took: %.1f \xC2\xB5s, Total: %.1f \xC2\xB5s)\n\n", env.os, env.shell, env.confidence, (t_cap - t_safety)/1000.0, (t_cap - t_start)/1000.0);
             } else if (trace_mode == 2) {
-                printf("  { \"stage\": \"capability\", \"status\": \"supported\", \"os\": \"%s\", \"shell\": \"%s\" },\n", env.os, env.shell);
+                printf("  { \"stage\": \"capability\", \"status\": \"supported\", \"os\": \"%s\", \"shell\": \"%s\", \"latency_us\": %.1f, \"total_us\": %.1f },\n", env.os, env.shell, (t_cap - t_safety)/1000.0, (t_cap - t_start)/1000.0);
             }
             
             AdaptedCommand adapted;
             if (adapt_ir_to_native(&ir, env.os, env.shell, "config/dictionary", &adapted)) {
+                long long t_adapt = get_time_ns_main();
                 if (trace_mode == 1) {
-                    printf("[Adapter]\nSelected:\n%s\n\nConfidence:\n%d%%\n\n", adapted.native_command, adapted.score.confidence);
+                    printf("[Adapter] (Took: %.1f \xC2\xB5s, Total: %.1f \xC2\xB5s)\nSelected:\n%s\n\nConfidence:\n%d%%\n\n", (t_adapt - t_cap)/1000.0, (t_adapt - t_start)/1000.0, adapted.native_command, adapted.score.confidence);
                     printf("[Execution]\nRunning...\n");
                 } else if (trace_mode == 2) {
-                    printf("  { \"stage\": \"adapter\", \"command\": \"%s\", \"confidence\": %d }\n", adapted.native_command, adapted.score.confidence);
+                    printf("  { \"stage\": \"adapter\", \"command\": \"%s\", \"confidence\": %d, \"latency_us\": %.1f, \"total_us\": %.1f }\n", adapted.native_command, adapted.score.confidence, (t_adapt - t_cap)/1000.0, (t_adapt - t_start)/1000.0);
                     printf("] }\n");
                     return; // Skip execution in JSON trace mode for pure analysis
+                }
+                if (trace_mode == 3) {
+                    explain_translation(input, &ir, &adapted, cap);
+                    return;
                 }
                 
                 int result = system(adapted.native_command);
@@ -93,6 +122,10 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
                 printf("Error: Target environment does not support this operation.\n");
             } else if (trace_mode == 2) {
                 printf("  { \"stage\": \"capability\", \"status\": \"unsupported\" }\n] }\n");
+            } else if (trace_mode == 3) {
+                AdaptedCommand empty_adapted;
+                memset(&empty_adapted, 0, sizeof(empty_adapted));
+                explain_translation(input, &ir, &empty_adapted, cap);
             }
         }
     } else {
@@ -138,6 +171,9 @@ int main(int argc, char** argv) {
             trace_mode = 1;
         } else if (strcmp(argv[i], "--trace=json") == 0) {
             trace_mode = 2;
+        } else if (strcmp(argv[i], "explain") == 0 && i == 1) {
+            // Drop to explain mode
+            trace_mode = 3;
         } else if (strcmp(argv[i], "shell") == 0) {
             // Drop to shell explicitly
             cli_command[0] = '\0';
