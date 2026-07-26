@@ -4,30 +4,39 @@
     "host_os": "windows",
     "host_shell": "powershell",
     "expected_ir": {
-      "operation": 1,
+      "operation": 3,
       "show_hidden": true,
       "long_format": true
     },
-    "expected_command": "Get-ChildItem -Hidden ."
+    "expected_command": "Get-ChildItem -Hidden .",
+    "expected_capability": 1,
+    "expected_confidence": 70,
+    "expected_reason_code": 2
   },
   {
     "input": "dir",
     "host_os": "linux",
     "host_shell": "bash",
     "expected_ir": {
-      "operation": 1
+      "operation": 3
     },
-    "expected_command": "ls ."
+    "expected_command": "ls .",
+    "expected_capability": 2,
+    "expected_confidence": 100,
+    "expected_reason_code": 0
   },
   {
-    "input": "rm -r -f build",
-    "host_os": "windows",
-    "host_shell": "cmd",
+    "input": "del /f build",
+    "host_os": "linux",
+    "host_shell": "bash",
     "expected_ir": {
-      "operation": 2,
+      "operation": 6,
       "force": true,
       "target": "build"
     },
-    "expected_command": "del /f build"
+    "expected_command": "rm -f build",
+    "expected_capability": 2,
+    "expected_confidence": 100,
+    "expected_reason_code": 0
   }
 ]

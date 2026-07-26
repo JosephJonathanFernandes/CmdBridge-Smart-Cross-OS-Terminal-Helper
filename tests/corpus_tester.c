@@ -2,6 +2,7 @@
 #include "adapter.h"
 #include "test_framework.h"
 #include "cJSON.h"
+#include "capability.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +41,10 @@ void test_corpus() {
         const char* host_shell = cJSON_GetObjectItem(test_case, "host_shell")->valuestring;
         cJSON* expected_ir = cJSON_GetObjectItem(test_case, "expected_ir");
         const char* expected_command = cJSON_GetObjectItem(test_case, "expected_command")->valuestring;
+        
+        cJSON* expected_cap = cJSON_GetObjectItem(test_case, "expected_capability");
+        cJSON* expected_conf = cJSON_GetObjectItem(test_case, "expected_confidence");
+        cJSON* expected_reason = cJSON_GetObjectItem(test_case, "expected_reason_code");
 
         printf("Testing Corpus: %s -> %s\n", input, host_shell);
 
@@ -63,11 +68,16 @@ void test_corpus() {
             cJSON* tgt = cJSON_GetObjectItem(expected_ir, "target");
             if (tgt) ASSERT_STR_EQ(tgt->valuestring, ir.target);
 
+            CapabilitySupport cap = negotiate_capability(&ir, host_os, host_shell, "../config/dictionary");
+            if (expected_cap) ASSERT_EQ(expected_cap->valueint, cap);
+            
             AdaptedCommand adapted;
             bool adapted_ok = adapt_ir_to_native(&ir, host_os, host_shell, "../config/dictionary", &adapted);
             ASSERT_TRUE(adapted_ok);
             if (adapted_ok) {
                 ASSERT_STR_EQ(expected_command, adapted.native_command);
+                if (expected_conf) ASSERT_EQ(expected_conf->valueint, adapted.score.confidence);
+                if (expected_reason) ASSERT_EQ(expected_reason->valueint, adapted.score.reason);
             }
         }
     }

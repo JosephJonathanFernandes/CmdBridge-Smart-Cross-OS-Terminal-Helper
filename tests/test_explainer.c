@@ -14,8 +14,8 @@ void test_explainer_basic() {
     
     // For now we just call it to ensure no crash
     // Ideally we would capture stdout to verify the output
-    explain_translation("ls -a", &ir, &adapted);
-    ASSERT_TRUE(true);
+    explain_translation("ls -a", &ir, &adapted, CAPABILITY_SUPPORTED);
+    ASSERT_TRUE(1); // Visual check only
 }
 
 void run_all_tests() {
