@@ -1,12 +1,30 @@
 # CmdBridge Release Checklist
 
-Before tagging a new version, ensure the following steps are fully completed:
+## 1. Fresh Clone Test
+On a clean machine or VM:
+```bash
+git clone https://github.com/your-username/CmdBridge-Smart-Cross-OS-Terminal-Helper.git
+cd CmdBridge-Smart-Cross-OS-Terminal-Helper
+cmake -B build
+cmake --build build --config Release
+ctest --test-dir build -C Release
+```
+Ensure all tests pass and installation is seamless.
 
-- [ ] **README updated**: Ensure all feature flags and supported command counts are accurate.
-- [ ] **CHANGELOG updated**: Add the new version, detailing what was Added, Changed, or Fixed.
-- [ ] **Tests passing**: Run `ctest` locally and ensure GitHub Actions CI is fully green.
-- [ ] **Benchmarks regenerated**: Run `cmake --build build --target benchmarks` and update the README with the latest metrics.
-- [ ] **Coverage generated**: Ensure coverage remains high (ideally > 90%).
-- [ ] **Version updated**: Update the `version` output string in `src/main.c`.
-- [ ] **GitHub Release drafted**: Include binaries (Windows `.exe`, Linux binary) and release notes.
-- [ ] **Release tagged**: Tag the commit in git and publish the release.
+## 2. Build Matrix Verification
+Verify build and tests across:
+- [ ] Windows (MinGW)
+- [ ] Windows (MSVC)
+- [ ] Ubuntu (GCC)
+- [ ] Ubuntu (Clang)
+- [ ] macOS (Apple Clang) (Roadmap)
+
+## 3. Pre-Release Tasks
+- [ ] README updated with latest features, commands, and installation instructions.
+- [ ] Dictionaries validated (`config/dictionary/*.json`).
+- [ ] Version numbers bumped in `CMakeLists.txt` and source files.
+- [ ] CI Pipeline is green.
+
+## 4. Release
+- [ ] Create and tag release in Git (e.g., `v0.5.0`).
+- [ ] Publish binaries/installers for supported platforms.

@@ -1,71 +1,49 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   build_and_test:
+    name: ${{ matrix.os }} - ${{ matrix.compiler }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+            c_compiler: gcc
+          - os: ubuntu-latest
+            compiler: clang
+            c_compiler: clang
+          - os: windows-latest
+            compiler: msvc
+            c_compiler: cl
+          - os: windows-latest
+            compiler: mingw
+            c_compiler: gcc
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Configure CMake
-      run: cmake -B build
+      env:
+        CC: ${{ matrix.c_compiler }}
+      run: |
+        if [ "${{ matrix.compiler }}" = "clang" ]; then
+          cmake -B build -S . -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+        else
+          cmake -B build -S .
+        fi
+      shell: bash
 
     - name: Build
-      run: cmake --build build
+      run: cmake --build build --config Release
 
-    - name: Run Tests
-      working-directory: build
-      run: ctest --output-on-failure
-      
-    - name: Configure CMake (Sanitizers)
-      if: matrix.os == 'ubuntu-latest'
-      run: cmake -B build_sanitizers -DENABLE_SANITIZERS=ON
-
-    - name: Build (Sanitizers)
-      if: matrix.os == 'ubuntu-latest'
-      run: cmake --build build_sanitizers
-      
-    - name: Run Tests (Sanitizers)
-      if: matrix.os == 'ubuntu-latest'
-      working-directory: build_sanitizers
-      run: ctest --output-on-failure
-      
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Install lcov
-      run: sudo apt-get install -y lcov
-
-    - name: Configure CMake (Coverage)
-      run: cmake -B build_coverage -DENABLE_COVERAGE=ON
-
-    - name: Build
-      run: cmake --build build_coverage
-
-    - name: Run Tests
-      working-directory: build_coverage
-      run: ctest --output-on-failure
-
-    - name: Generate Coverage Report
-      run: |
-        lcov --capture --directory build_coverage --output-file coverage.info
-        lcov --remove coverage.info '/usr/*' '*/tests/*' '*/benchmarks/*' --output-file coverage.info
-        lcov --list coverage.info
-        
-    - name: Post Coverage Summary
-      run: |
-        echo "### Code Coverage" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        lcov --summary coverage.info >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+    - name: Test (Unit & Integration)
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C Release --output-on-failure
