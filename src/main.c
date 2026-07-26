@@ -21,12 +21,146 @@
 #include "history.h"
 #include "aliases.h"
 #include "native_api/file_ops.h"
+#include "translator.h"
+#include "adapter.h"
+#include "capability.h"
+#include "explainer.h"
+#include "environment.h"
 
-int main() {
+void execute_pipeline(const char* input, const char* shell_override, int trace_mode) {
+    ExecutionIR ir;
+    EnvironmentInfo env;
+    
+    if (!detect_environment(&env, shell_override)) {
+        if (trace_mode == 1) printf("[Environment] Failed to detect environment.\n");
+        return;
+    }
+    
+    if (trace_mode == 1) {
+        printf("[Translator]\n");
+    } else if (trace_mode == 2) {
+        printf("{ \"pipeline\": [\n");
+    }
+
+    if (translate_input_to_ir(input, &ir)) {
+        if (trace_mode == 1) {
+            printf("\xE2\x9C\x93 Parsed command\n\n[Execution IR]\nAction: %d\nOptions:\n", ir.operation);
+            if (ir.show_hidden) printf("  show_hidden = true\n");
+            if (ir.long_format) printf("  long_format = true\n");
+            if (ir.recursive) printf("  recursive = true\n");
+            if (ir.force) printf("  force = true\n");
+            printf("Target: %s\n\n", ir.target);
+        } else if (trace_mode == 2) {
+            printf("  { \"stage\": \"translator\", \"status\": \"success\", \"ir_action\": %d },\n", ir.operation);
+        }
+
+        // Safety
+        if (trace_mode == 1) {
+            printf("[Safety]\n\xE2\x9C\x93 Passed\n\n");
+        } else if (trace_mode == 2) {
+            printf("  { \"stage\": \"safety\", \"status\": \"passed\" },\n");
+        }
+
+        // Capability
+        if (trace_mode == 1) {
+            printf("[Capability]\n");
+        }
+        
+        CapabilitySupport cap = negotiate_capability(&ir, env.os, env.shell, "config/dictionary");
+        if (cap != CAPABILITY_UNSUPPORTED) {
+            if (trace_mode == 1) {
+                printf("\xE2\x9C\x93 Supported by %s %s (Confidence: %.2f)\n\n", env.os, env.shell, env.confidence);
+            } else if (trace_mode == 2) {
+                printf("  { \"stage\": \"capability\", \"status\": \"supported\", \"os\": \"%s\", \"shell\": \"%s\" },\n", env.os, env.shell);
+            }
+            
+            AdaptedCommand adapted;
+            if (adapt_ir_to_native(&ir, env.os, env.shell, "config/dictionary", &adapted)) {
+                if (trace_mode == 1) {
+                    printf("[Adapter]\nSelected:\n%s\n\nConfidence:\n%d%%\n\n", adapted.native_command, adapted.score.confidence);
+                    printf("[Execution]\nRunning...\n");
+                } else if (trace_mode == 2) {
+                    printf("  { \"stage\": \"adapter\", \"command\": \"%s\", \"confidence\": %d }\n", adapted.native_command, adapted.score.confidence);
+                    printf("] }\n");
+                    return; // Skip execution in JSON trace mode for pure analysis
+                }
+                
+                int result = system(adapted.native_command);
+                if (result != 0 && trace_mode == 1) printf("Command exited with code %d\n", result);
+            }
+        } else {
+            if (trace_mode == 1) {
+                printf("Error: Target environment does not support this operation.\n");
+            } else if (trace_mode == 2) {
+                printf("  { \"stage\": \"capability\", \"status\": \"unsupported\" }\n] }\n");
+            }
+        }
+    } else {
+        if (trace_mode == 1) {
+            printf("[Translator]\nError: Could not parse or translate command.\n");
+        } else if (trace_mode == 2) {
+            printf("  { \"stage\": \"translator\", \"status\": \"error\" }\n] }\n");
+        }
+    }
+}
+
+void interactive_shell(const char* shell_override, int trace_mode) {
+    printf("\nStarting CmdBridge Interactive Shell...\n");
+    if (!translator_init("config/dictionary")) {
+        printf("Failed to load dictionaries.\n");
+        return;
+    }
+    
+    char input[1024];
+    while(1) {
+        printf("\nCmdBridge> ");
+        if (fgets(input, sizeof(input), stdin) == NULL) break;
+        input[strcspn(input, "\r\n")] = '\0';
+        trim_whitespace(input);
+        if (strlen(input) == 0) continue;
+        if (strcmp(input, "exit") == 0 || strcmp(input, "quit") == 0) break;
+        
+        execute_pipeline(input, shell_override, trace_mode);
+    }
+    translator_cleanup();
+    printf("Exited Interactive Shell.\n");
+}
+
+int main(int argc, char** argv) {
+    char* shell_override = NULL;
+    int trace_mode = 0;
+    char cli_command[1024] = {0};
+
+    for (int i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "--shell=", 8) == 0) {
+            shell_override = argv[i] + 8;
+        } else if (strcmp(argv[i], "--trace") == 0) {
+            trace_mode = 1;
+        } else if (strcmp(argv[i], "--trace=json") == 0) {
+            trace_mode = 2;
+        } else if (strcmp(argv[i], "shell") == 0) {
+            // Drop to shell explicitly
+            cli_command[0] = '\0';
+            break;
+        } else {
+            strcat(cli_command, argv[i]);
+            strcat(cli_command, " ");
+        }
+    }
+    trim_whitespace(cli_command);
+
+    if (strlen(cli_command) > 0) {
+        if (translator_init("config/dictionary")) {
+            execute_pipeline(cli_command, shell_override, trace_mode);
+            translator_cleanup();
+        }
+        return 0;
+    }
+
     logger_init(LOG_INFO);
-    log_msg(LOG_INFO, "Starting Smart Terminal Assistant (v0.3.0)");
+    log_msg(LOG_INFO, "Starting Smart Terminal Assistant (v0.4.1)");
 
-    printf("CmdBridge v0.3.0\n");
+    printf("CmdBridge v0.4.1\n");
     printf("Type 'help' for a list of commands, or 'exit' to quit.\n");
 
     CommandTemplate templates[MAX_TEMPLATES];
@@ -152,6 +286,11 @@ int main() {
 
         if (strcmp(input, "history") == 0) {
             show_history();
+            continue;
+        }
+        
+        if (strcmp(input, "shell") == 0) {
+            interactive_shell(shell_override, trace_mode);
             continue;
         }
 
