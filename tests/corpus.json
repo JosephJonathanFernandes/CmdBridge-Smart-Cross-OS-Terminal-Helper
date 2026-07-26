@@ -1,0 +1,33 @@
+[
+  {
+    "input": "ls -a -l",
+    "host_os": "windows",
+    "host_shell": "powershell",
+    "expected_ir": {
+      "operation": 1,
+      "show_hidden": true,
+      "long_format": true
+    },
+    "expected_command": "Get-ChildItem -Hidden ."
+  },
+  {
+    "input": "dir",
+    "host_os": "linux",
+    "host_shell": "bash",
+    "expected_ir": {
+      "operation": 1
+    },
+    "expected_command": "ls ."
+  },
+  {
+    "input": "rm -r -f build",
+    "host_os": "windows",
+    "host_shell": "cmd",
+    "expected_ir": {
+      "operation": 2,
+      "force": true,
+      "target": "build"
+    },
+    "expected_command": "del /f build"
+  }
+]
