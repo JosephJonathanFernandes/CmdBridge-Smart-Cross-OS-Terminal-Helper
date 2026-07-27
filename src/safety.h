@@ -11,6 +11,10 @@ typedef enum {
     RISK_CRITICAL
 } RiskLevel;
 
+#include "ir.h"
+
+int validate_execution_ir(const ExecutionIR *ir, char *error_msg, int max_msg_len);
+
 /**
  * Validates the intent before execution (exists, self-copy, root deletion, etc).
  * Returns 1 if valid and safe to proceed, 0 if invalid.

@@ -17,6 +17,44 @@ const char* get_risk_string(RiskLevel risk) {
     }
 }
 
+int validate_execution_ir(const ExecutionIR *ir, char *error_msg, int max_msg_len) {
+    if (!ir) {
+        snprintf(error_msg, max_msg_len, "Invalid IR structure.");
+        return 0;
+    }
+
+    // Root Deletion Check
+    if (ir->operation == INTENT_DELETE_DIRECTORY || ir->operation == INTENT_DELETE_FILE) {
+        if (strcmp(ir->target, "/") == 0 ||
+            strcmp(ir->target, "C:\\") == 0 ||
+            strcmp(ir->target, "c:\\") == 0 ||
+            strcmp(ir->target, ".") == 0 ||
+            strcmp(ir->target, "..") == 0) {
+            snprintf(error_msg, max_msg_len, "Cannot delete root or special directory '%s'.", ir->target);
+            return 0;
+        }
+    }
+
+    // Self-copy/move check
+    if (ir->operation == INTENT_COPY_FILE || ir->operation == INTENT_MOVE_FILE) {
+        if (strcmp(ir->target, ir->destination) == 0) {
+            snprintf(error_msg, max_msg_len, "Source and destination are the same.");
+            return 0;
+        }
+    }
+
+    // Plugin-specific safety checks
+    if (ir->operation == INTENT_CUSTOM_PLUGIN) {
+        // If a plugin intends to run arbitrary command, run it through the string check
+        if (!is_command_safe(ir->target)) {
+            snprintf(error_msg, max_msg_len, "Plugin attempted to execute a dangerous command.");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 int validate_intent(const Intent *intent, char *error_msg, int max_msg_len) {
     if (!intent) {
         snprintf(error_msg, max_msg_len, "Invalid intent structure.");

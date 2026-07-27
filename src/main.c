@@ -45,6 +45,7 @@ static long long get_time_ns_main() {
 #include "capability.h"
 #include "explainer.h"
 #include "environment.h"
+#include "plugin_manager.h"
 
 void execute_pipeline(const char* input, const char* shell_override, int trace_mode) {
     ExecutionIR ir;
@@ -63,8 +64,21 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
     } else if (trace_mode == 2) {
         printf("{ \"pipeline\": [\n");
     }
+    
+    // 1. Check if any plugin claims this command
+    CB_Plugin* claiming_plugin = plugin_manager_get_claiming_plugin(input);
+    bool translated = false;
+    
+    if (claiming_plugin) {
+        if (trace_mode == 1) printf("[Plugin Router] Routed to %s\n", claiming_plugin->name);
+        if (claiming_plugin->translate) {
+            translated = (claiming_plugin->translate(NULL, input, (CB_Intent*)&ir) != 0);
+        }
+    } else {
+        translated = translate_input_to_ir(input, &ir);
+    }
 
-    if (translate_input_to_ir(input, &ir)) {
+    if (translated) {
         long long t_parse = get_time_ns_main();
         if (trace_mode == 1) {
             printf("\xE2\x9C\x93 Parsed command (Took: %.1f \xC2\xB5s, Total: %.1f \xC2\xB5s)\n\n[Execution IR]\nAction: %d\nOptions:\n", (t_parse - t_env)/1000.0, (t_parse - t_start)/1000.0, ir.operation);
@@ -79,6 +93,18 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
 
         // Safety
         long long t_safety = get_time_ns_main();
+        char error_msg[256] = {0};
+        if (!validate_execution_ir(&ir, error_msg, sizeof(error_msg))) {
+            if (trace_mode == 1) {
+                printf("[Safety]\n\xE2\x9C\x97 Failed: %s\n", error_msg);
+            } else if (trace_mode == 2) {
+                printf("  { \"stage\": \"safety\", \"status\": \"failed\", \"reason\": \"%s\" }\n] }\n", error_msg);
+            } else {
+                printf("Error: Command rejected by safety checks: %s\n", error_msg);
+            }
+            return;
+        }
+
         if (trace_mode == 1) {
             printf("[Safety]\n\xE2\x9C\x93 Passed (Took: %.1f \xC2\xB5s, Total: %.1f \xC2\xB5s)\n\n", (t_safety - t_parse)/1000.0, (t_safety - t_start)/1000.0);
         } else if (trace_mode == 2) {
@@ -90,7 +116,10 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
             printf("[Capability]\n");
         }
         
-        CapabilitySupport cap = negotiate_capability(&ir, env.os, env.shell, "config/dictionary");
+        CapabilitySupport cap = CAPABILITY_SUPPORTED;
+        if (ir.operation != INTENT_CUSTOM_PLUGIN) {
+            cap = negotiate_capability(&ir, env.os, env.shell, "config/dictionary");
+        }
         long long t_cap = get_time_ns_main();
         
         if (cap != CAPABILITY_UNSUPPORTED) {
@@ -101,7 +130,17 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
             }
             
             AdaptedCommand adapted;
-            if (adapt_ir_to_native(&ir, env.os, env.shell, "config/dictionary", &adapted)) {
+            bool adapted_ok = true;
+            
+            if (ir.operation != INTENT_CUSTOM_PLUGIN) {
+                adapted_ok = adapt_ir_to_native(&ir, env.os, env.shell, "config/dictionary", &adapted);
+            } else {
+                memset(&adapted, 0, sizeof(AdaptedCommand));
+                strcpy(adapted.native_command, "(Plugin Execution)");
+                adapted.score.confidence = 100;
+            }
+            
+            if (adapted_ok) {
                 long long t_adapt = get_time_ns_main();
                 if (trace_mode == 1) {
                     printf("[Adapter] (Took: %.1f \xC2\xB5s, Total: %.1f \xC2\xB5s)\nSelected:\n%s\n\nConfidence:\n%d%%\n\n", (t_adapt - t_cap)/1000.0, (t_adapt - t_start)/1000.0, adapted.native_command, adapted.score.confidence);
@@ -116,7 +155,14 @@ void execute_pipeline(const char* input, const char* shell_override, int trace_m
                     return;
                 }
                 
-                int result = system(adapted.native_command);
+                int result = 0;
+                if (ir.operation == INTENT_CUSTOM_PLUGIN && claiming_plugin && claiming_plugin->execute) {
+                    if (trace_mode == 1) printf("[Execution] Executing via Plugin: %s\n", claiming_plugin->name);
+                    claiming_plugin->execute(NULL, (CB_Intent*)&ir, (CB_Result*)&adapted);
+                } else {
+                    result = system(adapted.native_command);
+                }
+                
                 if (result != 0 && trace_mode == 1) printf("Command exited with code %d\n", result);
             }
         } else {
@@ -145,6 +191,8 @@ void interactive_shell(const char* shell_override, int trace_mode) {
         printf("Failed to load dictionaries.\n");
         return;
     }
+    plugin_manager_init("plugins");
+    
     
     char input[1024];
     while(1) {
@@ -157,6 +205,7 @@ void interactive_shell(const char* shell_override, int trace_mode) {
         
         execute_pipeline(input, shell_override, trace_mode);
     }
+    plugin_manager_cleanup();
     translator_cleanup();
     printf("Exited Interactive Shell.\n");
 }
@@ -172,8 +221,13 @@ int main(int argc, char** argv) {
         bool is_analyze = false;
         bool is_migrate = false;
         
-        if (strcmp(argv[1], "version") == 0) {
-            printf("CmdBridge 0.6.0\n\nExecution IR: v1\nDictionary Schema: v1\nPlugin API: not installed\n\nBuilt:\n2026-07-27\n\nCompiler:\nGCC/Clang Compatible\n");
+        if (strcmp(argv[1], "plugins") == 0) {
+            plugin_manager_init("plugins");
+            plugin_manager_print_registry();
+            plugin_manager_cleanup();
+            return 0;
+        } else if (strcmp(argv[1], "version") == 0) {
+            printf("CmdBridge 0.6.0\n\nExecution IR: v1\nDictionary Schema: v1\nPlugin API: v1\n\nBuilt:\n2026-07-27\n\nCompiler:\nGCC/Clang Compatible\n");
             return 0;
         } else if (strcmp(argv[1], "doctor") == 0) {
             printf("Environment\n\n");
@@ -307,7 +361,9 @@ int main(int argc, char** argv) {
 
     if (strlen(cli_command) > 0) {
         if (translator_init("config/dictionary")) {
+            plugin_manager_init("plugins");
             execute_pipeline(cli_command, shell_override, trace_mode);
+            plugin_manager_cleanup();
             translator_cleanup();
         }
         return 0;
@@ -456,7 +512,9 @@ int main(int argc, char** argv) {
         }
         
         if (strcmp(input, "shell") == 0) {
+            plugin_manager_init("plugins");
             interactive_shell(shell_override, trace_mode);
+            plugin_manager_cleanup();
             continue;
         }
 

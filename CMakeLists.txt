@@ -17,7 +17,7 @@ set(SOURCES
     src/logger.c
 )
 
-# Core library (so we can link tests against it without main.c)
+# Core library
 add_library(smart_terminal_core STATIC
     src/parser.c
     src/intent.c
@@ -38,6 +38,9 @@ add_library(smart_terminal_core STATIC
     src/explainer.c
     src/script_processor.c
     src/environment.c
+    src/plugin_manager.c
+    src/plugin_api.c
+    src/config.c
 )
 
 if (WIN32)
@@ -46,7 +49,7 @@ else()
     target_sources(smart_terminal_core PRIVATE src/native_api/posix_file_ops.c)
 endif()
 
-target_include_directories(smart_terminal_core PUBLIC src third_party/cJSON)
+target_include_directories(smart_terminal_core PUBLIC src third_party/cJSON include)
 
 # Build main executable
 add_executable(smart_terminal src/main.c)
@@ -125,3 +128,19 @@ add_custom_target(benchmarks DEPENDS ${BENCHMARK_TARGETS})
 install(TARGETS smart_terminal DESTINATION bin)
 install(DIRECTORY config DESTINATION bin)
 install(DIRECTORY data DESTINATION bin)
+
+# Plugins
+macro(add_cmdbridge_plugin PLUGIN_NAME SRC_FILE)
+    add_library(${PLUGIN_NAME} SHARED ${SRC_FILE})
+    target_include_directories(${PLUGIN_NAME} PRIVATE include)
+    set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
+    if(WIN32)
+        set_target_properties(${PLUGIN_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins")
+        set_target_properties(${PLUGIN_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins")
+    else()
+        set_target_properties(${PLUGIN_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins")
+    endif()
+endmacro()
+
+add_cmdbridge_plugin(hello_plugin plugins/hello/hello_plugin.c)
+add_cmdbridge_plugin(docker_plugin plugins/docker/docker_plugin.c)
