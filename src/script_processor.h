@@ -41,6 +41,10 @@ typedef struct {
     int entry_count;
     int entry_capacity;
     
+    // Context
+    char target_os[64];
+    char target_shell[64];
+    
     // Summary Stats
     int total_lines;
     int total_commands;

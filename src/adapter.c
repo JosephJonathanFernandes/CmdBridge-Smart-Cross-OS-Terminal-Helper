@@ -87,14 +87,21 @@ bool adapt_ir_to_native(const ExecutionIR* ir, const char* target_os, const char
         if (!found) { missing_flag = true; strcpy(missing_flag_name, "quiet"); }
     }
     
-    // Append targets
+    // Build final arguments
     if (strlen(ir->target) > 0) {
         strcat(cmd_str, " ");
+        int has_space = (strchr(ir->target, ' ') != NULL);
+        if (has_space) strcat(cmd_str, "\"");
         strcat(cmd_str, ir->target);
+        if (has_space) strcat(cmd_str, "\"");
     }
+    
     if (strlen(ir->destination) > 0) {
         strcat(cmd_str, " ");
+        int has_space = (strchr(ir->destination, ' ') != NULL);
+        if (has_space) strcat(cmd_str, "\"");
         strcat(cmd_str, ir->destination);
+        if (has_space) strcat(cmd_str, "\"");
     }
     
     strncpy(out_cmd->native_command, cmd_str, sizeof(out_cmd->native_command) - 1);

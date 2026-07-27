@@ -24,7 +24,8 @@ typedef enum {
     INTENT_SET_ENV,
     INTENT_GET_ENV,
     INTENT_LIST_PROCESSES,
-    INTENT_KILL_PROCESS
+    INTENT_KILL_PROCESS,
+    INTENT_PRINT_TEXT
 } OperationIntent;
 
 // Capabilities (Feature Negotiation)

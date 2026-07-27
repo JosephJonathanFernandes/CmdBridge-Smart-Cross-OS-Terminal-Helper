@@ -3,6 +3,11 @@
   "shell": "cmd",
   "os": "windows",
   "commands": {
+    "print_text": {
+      "intent": "INTENT_PRINT_TEXT",
+      "command": "echo",
+      "flags": {}
+    },
     "change_directory": {
       "intent": "INTENT_CHANGE_DIRECTORY",
       "command": "cd",

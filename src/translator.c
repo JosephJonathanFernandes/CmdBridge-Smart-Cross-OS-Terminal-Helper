@@ -1,6 +1,7 @@
 #include "translator.h"
 #include "dictionary.h"
 #include "logger.h"
+#include "utils.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -35,12 +36,16 @@ bool translate_input_to_ir(const char* raw_input, ExecutionIR* out_ir) {
     memset(out_ir, 0, sizeof(ExecutionIR));
     out_ir->operation = INTENT_UNKNOWN;
     
-    char input_copy[512];
-    strncpy(input_copy, raw_input, sizeof(input_copy) - 1);
+    char *argv[100];
+    int argc = 0;
+    tokenize_command(raw_input, argv, &argc);
     
-    // Simple tokenizer
-    char *token = strtok(input_copy, " \t\r\n");
-    if (!token) return false; // Empty
+    if (argc == 0) {
+        free_tokens(argv, argc);
+        return false;
+    }
+    
+    char *token = argv[0];
     
     // Find matching command across all dictionaries
     const CommandMapping* matched_cmd = NULL;
@@ -59,7 +64,8 @@ bool translate_input_to_ir(const char* raw_input, ExecutionIR* out_ir) {
         strncpy(out_ir->input_shell, matched_dict->shell, sizeof(out_ir->input_shell) - 1);
         
         // Parse the rest for targets and flags
-        while ((token = strtok(NULL, " \t\r\n")) != NULL) {
+        for (int arg_idx = 1; arg_idx < argc; arg_idx++) {
+            token = argv[arg_idx];
             if (token[0] == '-' || token[0] == '/') { // Flag
                 for (int f = 0; f < matched_cmd->flag_count; f++) {
                     if (strcmp(matched_cmd->flags[f].flag, token) == 0) {
@@ -85,8 +91,10 @@ bool translate_input_to_ir(const char* raw_input, ExecutionIR* out_ir) {
             strcpy(out_ir->target, ".");
         }
         
+        free_tokens(argv, argc);
         return true;
     }
     
+    free_tokens(argv, argc);
     return false;
 }

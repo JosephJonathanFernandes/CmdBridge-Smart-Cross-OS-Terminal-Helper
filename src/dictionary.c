@@ -25,6 +25,7 @@ OperationIntent parse_intent_string(const char* str) {
     if (strcmp(str, "INTENT_GET_ENV") == 0) return INTENT_GET_ENV;
     if (strcmp(str, "INTENT_LIST_PROCESSES") == 0) return INTENT_LIST_PROCESSES;
     if (strcmp(str, "INTENT_KILL_PROCESS") == 0) return INTENT_KILL_PROCESS;
+    if (strcmp(str, "INTENT_PRINT_TEXT") == 0) return INTENT_PRINT_TEXT;
     return INTENT_UNKNOWN;
 }
 
