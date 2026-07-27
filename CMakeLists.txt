@@ -36,6 +36,7 @@ add_library(smart_terminal_core STATIC
     src/capability.c
     src/adapter.c
     src/explainer.c
+    src/script_processor.c
     src/environment.c
 )
 
@@ -92,6 +93,7 @@ add_cmdbridge_test(test_translator tests/test_translator.c)
 add_cmdbridge_test(test_adapter tests/test_adapter.c)
 add_cmdbridge_test(test_capability tests/test_capability.c)
 add_cmdbridge_test(test_explainer tests/test_explainer.c)
+add_cmdbridge_test(test_script_processor tests/test_script_processor.c)
 add_cmdbridge_test(corpus_tester tests/corpus_tester.c)
 
 # Benchmarks
