@@ -30,6 +30,8 @@ static long long get_time_ns_main() {
 #include "intent.h"
 #include "parser.h"
 #include "commands.h"
+#include "environment.h"
+#include "script_processor.h"
 #include "os_mapper.h"
 #include "safety.h"
 #include "utils.h"
@@ -164,23 +166,116 @@ int main(int argc, char** argv) {
     int trace_mode = 0;
     char cli_command[1024] = {0};
 
-    for (int i = 1; i < argc; i++) {
-        if (strncmp(argv[i], "--shell=", 8) == 0) {
-            shell_override = argv[i] + 8;
-        } else if (strcmp(argv[i], "--trace") == 0) {
-            trace_mode = 1;
-        } else if (strcmp(argv[i], "--trace=json") == 0) {
-            trace_mode = 2;
-        } else if (strcmp(argv[i], "explain") == 0 && i == 1) {
-            // Drop to explain mode
+    if (argc > 1) {
+        int start_idx = 1;
+        bool is_explain = false;
+        bool is_analyze = false;
+        bool is_migrate = false;
+        
+        if (strcmp(argv[1], "explain") == 0) {
+            is_explain = true;
+            start_idx = 2;
             trace_mode = 3;
-        } else if (strcmp(argv[i], "shell") == 0) {
-            // Drop to shell explicitly
-            cli_command[0] = '\0';
-            break;
-        } else {
-            strcat(cli_command, argv[i]);
-            strcat(cli_command, " ");
+        } else if (strcmp(argv[1], "analyze") == 0) {
+            is_analyze = true;
+            start_idx = 2;
+        } else if (strcmp(argv[1], "migrate") == 0) {
+            is_migrate = true;
+            start_idx = 2;
+        }
+        
+        if (is_analyze || is_migrate) {
+            if (argc < 3) {
+                printf("Error: '%s' requires a file path.\n", argv[1]);
+                return 1;
+            }
+            
+            const char* script_path = argv[2];
+            const char* target_os = NULL;
+            const char* target_shell = NULL;
+            const char* output_path = NULL;
+            const char* report_path = NULL;
+            bool dry_run = is_analyze; // Analyze is effectively a dry run
+            
+            for (int i = 3; i < argc; i++) {
+                if (strcmp(argv[i], "--target-os") == 0 && i + 1 < argc) {
+                    target_os = argv[++i];
+                } else if (strcmp(argv[i], "--target-shell") == 0 && i + 1 < argc) {
+                    target_shell = argv[++i];
+                } else if (strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
+                    output_path = argv[++i];
+                } else if (strcmp(argv[i], "--report") == 0 && i + 1 < argc) {
+                    report_path = argv[++i];
+                } else if (strcmp(argv[i], "--dry-run") == 0) {
+                    dry_run = true;
+                }
+            }
+            
+            if (!target_os || !target_shell) {
+                printf("Error\n\nNo migration target specified.\n\nExamples\n\ncmdbridge %s install.sh --target-os windows --target-shell powershell\n", argv[1]);
+                return 1;
+            }
+            
+            if (!translator_init("config/dictionary")) {
+                printf("Failed to load dictionaries.\n");
+                return 1;
+            }
+            
+            MigrationReport report;
+            if (migrate_script(script_path, target_os, target_shell, "config/dictionary", &report)) {
+                if (report_path) {
+                    export_migration_report_json(&report, report_path);
+                }
+                
+                if (dry_run) {
+                    if (is_analyze) {
+                        print_migration_summary(&report);
+                    } else {
+                        printf("Dry Run Complete.\n\n");
+                        print_migration_summary(&report);
+                        for (int i = 0; i < report.entry_count; i++) {
+                            if (report.entries[i].classification == LINE_COMMAND) {
+                                printf("\nLine %d\n\n%s\n\n\xE2\x86\x93\n\n%s\n\nStatus\n\n%s\n", 
+                                    report.entries[i].line_number, 
+                                    report.entries[i].original_line, 
+                                    report.entries[i].status == STATUS_UNSUPPORTED ? "N/A" : report.entries[i].translated_command,
+                                    report.entries[i].status == STATUS_TRANSLATED ? "Translated" : 
+                                    (report.entries[i].status == STATUS_APPROXIMATE ? "Approximate" : "Unsupported"));
+                            }
+                        }
+                    }
+                } else if (output_path) {
+                    if (write_migrated_script(&report, output_path)) {
+                        printf("Migration written to %s\n\n", output_path);
+                        print_migration_summary(&report);
+                    } else {
+                        printf("Failed to write to %s\n", output_path);
+                    }
+                } else {
+                    printf("Error: Output path required unless --dry-run is specified.\n");
+                }
+            } else {
+                printf("Failed to read script: %s\n", script_path);
+            }
+            free_migration_report(&report);
+            translator_cleanup();
+            return 0;
+        }
+
+        for (int i = start_idx; i < argc; i++) {
+            if (strncmp(argv[i], "--shell=", 8) == 0) {
+                shell_override = argv[i] + 8;
+            } else if (strcmp(argv[i], "--trace") == 0) {
+                trace_mode = 1;
+            } else if (strcmp(argv[i], "--trace=json") == 0) {
+                trace_mode = 2;
+            } else if (strcmp(argv[i], "shell") == 0) {
+                cli_command[0] = '\0';
+                break;
+            } else {
+                strcat(cli_command, argv[i]);
+                strcat(cli_command, " ");
+            }
         }
     }
     trim_whitespace(cli_command);
@@ -310,6 +405,16 @@ int main(int argc, char** argv) {
             
             printf("UTILITIES\n");
             printf("────────────────────────────\n");
+            printf("Usage:\n");
+            printf("  cmdbridge <command> [args]\n");
+            printf("  cmdbridge explain <command> [args]\n");
+            printf("  cmdbridge analyze <file>\n");
+            printf("  cmdbridge migrate <file> --target-os <os> --target-shell <shell> [--out <output>] [--dry-run] [--report <json>]\n");
+            printf("\n");
+            printf("Options:\n");
+            printf("  --shell <name>      Override target shell for interactive translation\n");
+            printf("  --trace             Show detailed pipeline steps\n");
+            printf("  --trace-json        Output pipeline steps as JSON\n");
             printf("history\n");
             printf("explain [command]\n");
             printf("help\n");
